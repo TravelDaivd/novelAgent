@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小说智能分析系统</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 侧边栏 -->
+        <aside class="sidebar">
+            <div class="logo">
+                <span>📖</span>
+                <h1>小说分析</h1>
+            </div>
+            <div class="sidebar-actions">
+                <button id="newChatBtn" class="btn-new-chat">
+                    <span>+</span> 新对话
+                </button>
+            </div>
+            <div class="sidebar-history">
+                <h3>历史记录</h3>
+                <ul id="historyList"></ul>
+            </div>
+            <div class="sidebar-footer">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="statusText">系统就绪</span>
+            </div>
+        </aside>
+
+        <!-- 主内容 -->
+        <main class="main-content">
+            <!-- 顶部栏 -->
+            <header class="header">
+                <div class="header-left">
+                    <h2 id="currentTitle">小说智能分析</h2>
+                </div>
+                <div class="header-right">
+                    <button id="uploadBtn" class="btn-upload">📎 上传章节</button>
+                </div>
+            </header>
+
+            <!-- 对话区 -->
+            <div class="chat-container" id="chatContainer">
+                <div class="empty-state" id="emptyState">
+                    <div class="empty-icon">📚</div>
+                    <h3>开始分析玄幻/修仙类小说</h3>
+                    <p>上传章节或直接提问，系统将智能分析情节、人物和关系</p>
+                    <div class="empty-hints">
+                        <div class="hint-item">🔍 查询人物关系</div>
+                        <div class="hint-item">⚔️ 分析情节类型</div>
+                        <div class="hint-item">📊 生成人物图谱</div>
+                    </div>
+                </div>
+                <div id="messages"></div>
+            </div>
+
+            <!-- 输入区 -->
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea id="userInput" rows="2" placeholder="输入问题，例如：萧炎和药老是什么关系？" maxlength="500"></textarea>
+                    <button id="sendBtn" class="btn-send">
+                        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    </button>
+                </div>
+                <div class="input-footer">
+                    <span>支持上传章节进行分析</span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 上传弹窗 -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📎 上传章节</h3>
+                <button class="modal-close" id="closeModal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>章节ID</label>
+                    <input type="number" id="chapterId" placeholder="例如：101">
+                </div>
+                <div class="form-group">
+                    <label>章节标题</label>
+                    <input type="text" id="chapterTitle" placeholder="例如：第101章 新的征程" >
+                </div>
+                <div class="form-group">
+                    <label>章节内容</label>
+                    <textarea id="chapterContent" rows="10" placeholder="请粘贴章节内容..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>或上传文件</label>
+                    <input type="file" id="fileInput" accept=".txt">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" id="cancelUpload">取消</button>
+                <button class="btn-primary" id="confirmUpload">开始分析</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="static/app.js"></script>
+</body>
+</html>
