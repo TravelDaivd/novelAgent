@@ -50,5 +50,5 @@ novelAgent/                          # 项目根目录
 │   └── models/                     # 训练好的模型
 └──     ├── person_recognition_macBert/            # 实体识别模型
         ├── relation_recognition_macBert/          # 关系抽取模型
-        └── shared                                 # 模型基座
+        └── shared/                                 # 模型基座
         └── text_recognition_macBert/              # 文本分类模型 
