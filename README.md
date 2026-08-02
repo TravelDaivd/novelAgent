@@ -58,4 +58,4 @@ novelAgent/                          # 项目根目录
 本系统采用自下而上的五层架构设计，覆盖从非结构化文本到结构化知识再到可控问答的完整工程链路，
 支持在线问答与离线内容入库两条并行数据流。
 
-![垂直领域知识型Agent系统-小说版](./src/frontend/static/images/novel_agent_system.png?raw=true)
+![垂直领域知识型Agent系统-小说版](./src/frontend/static/images/novel_agent_system.svg?raw=true)
