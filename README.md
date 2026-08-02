@@ -55,73 +55,7 @@ novelAgent/                          # 项目根目录
 
 ## 系统架构图
 
-系统采用五层架构设计，包含离线内容上传链路与在线问答链路两条主要数据流：
+本系统采用自下而上的五层架构设计，覆盖从非结构化文本到结构化知识再到可控问答的完整工程链路，
+支持在线问答与离线内容入库两条并行数据流。
 
-```mermaid
-flowchart TD
-    subgraph 用户交互层
-        User[用户提问<br>自然语言问题]
-        Upload[上传内容<br>新章节 / 新文档]
-    end
-
-    subgraph 上层_Agent调度层
-        Agent[Agent调度引擎<br>LangGraph + ReAct]
-        Flow[固定流程编排<br>图谱优先 → 片段检索 → 原文兜底]
-        State[多轮对话状态管理<br>Human/AI/Tool Message 配对]
-        Prompt[阶段提示词<br>控制每个阶段执行行为]
-    end
-
-    subgraph 中层_工具与存储层
-        Tools[Tools 封装层]
-        Tool1[图谱查询工具<br>Cypher 查询]
-        Tool2[片段检索工具<br>向量相似度检索]
-        Tool3[原文检索工具<br>兜底检索]
-        Storage[存储层]
-        Neo4j[(知识图谱<br>实体 + 关系 + 片段ID)]
-        Chroma1[(片段向量库<br>实体 + 关系 + 片段内容)]
-        Chroma2[(原文向量库<br>章节分块 + 原文)]
-        UploadTools[入库工具<br>向量写入 / 图谱写入]
-    end
-
-    subgraph 底层_模型层
-        Base[基座模型<br>chinese_macbert_base]
-        Model1[实体识别模型<br>识别人物/地点等实体]
-        Model2[关系抽取模型<br>抽取实体间关系]
-        Model3[文本分类模型<br>识别文本类型]
-        Struct[结构化数据<br>实体 + 关系 + 分类标签]
-    end
-
-    subgraph 输出层
-        Output[最终回答<br>含证据链 / 可追溯]
-    end
-
-    %% 内容上传链路
-    Upload --> Model1
-    Upload --> Model2
-    Upload --> Model3
-    Model1 --> Struct
-    Model2 --> Struct
-    Model3 --> Struct
-    Struct --> UploadTools
-    UploadTools --> Neo4j
-    UploadTools --> Chroma1
-    UploadTools --> Chroma2
-
-    %% 问答链路
-    User --> Agent
-    Agent --> Flow
-    Agent --> State
-    Agent --> Prompt
-    Flow --> Tools
-    Tools --> Tool1
-    Tools --> Tool2
-    Tools --> Tool3
-    Tool1 --> Neo4j
-    Tool2 --> Chroma1
-    Tool3 --> Chroma2
-    Neo4j -->|返回实体/关系| Tools
-    Chroma1 -->|返回片段内容| Tools
-    Chroma2 -->|返回原文内容| Tools
-    Tools -->|整合结果| Agent
-    Agent --> Output
-```
+![垂直领域知识型Agent系统-小说版](./src/frontend/static/images/novel_agent_system.png)
