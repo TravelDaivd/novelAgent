@@ -1,3 +1,5 @@
+## 项目工程结构
+```
 novelAgent/                          # 项目根目录
 ├── scrapy.cfg                      # ✅ Scrapy配置（放在根目录）
 ├── requirements.txt                # 项目依赖
@@ -52,7 +54,7 @@ novelAgent/                          # 项目根目录
         ├── relation_recognition_macBert/          # 关系抽取模型
         └── shared/                                 # 模型基座
         └── text_recognition_macBert/              # 文本分类模型
-
+```
 ## 系统架构图
 
 本系统采用自下而上的五层架构设计，覆盖从非结构化文本到结构化知识再到可控问答的完整工程链路，
