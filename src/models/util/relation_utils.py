@@ -4,7 +4,7 @@ import random
 import numpy as np
 import torch
 import json
-from collections import Counter
+
 
 from sklearn.metrics import classification_report, accuracy_score
 
@@ -42,78 +42,7 @@ class RelationUtils:
             max_length=max_length,
             return_tensors='pt'
         )
-        
-    @staticmethod
-    def get_class_weights(data_path, label2id, method='balanced'):
-        """
-           自动计算类别权重 - 适配数据结构
-           Args:
-                data_path: 数据文件路径
-                label2id: 标签映射
-                method: 'balanced' 或 'inverse' 或 'log'
-           Returns:
-               weights: 类别权重列表
-        """
-
-        all_labels = []
-        
-        # 初始化计数器
-        # 读取数据
-        with open(data_path, 'r', encoding='utf-8') as file:
-            data = json.load(file)
-            items = data if isinstance(data, list) else [data]
-
-            for item in items:
-                for relation in item.get('relations', []):
-                    label_str = relation.get('relation', '')
-                    if label_str in label2id:
-                        all_labels.append(label2id[label_str])
-
-        # 统计各类别数量
-        label_counts = Counter(all_labels)
-        num_classes = len(label2id)
-        # 确保所有类别都有计数
-        for label_id in label2id.values():
-            if label_id not in label_counts:
-                label_counts[label_id] = 0
-
-        logging.info(f"类别分布: {dict(label_counts)}")
-
-        # 根据不同方法计算权重
-        if method == 'balanced':
-            # 手动计算 balanced 权重
-            # 公式：weight = n_samples / (n_classes * n_samples_per_class)
-            total = len(all_labels)
-            n_classes = len(label2id)
-
-            weights = []
-            for label_id in range(n_classes):
-                count = label_counts.get(label_id, 0)
-                if count == 0:
-                    weight = 1.0  # 如果没有样本，给默认权重
-                else:
-                    weight = total / (n_classes * count)
-                weights.append(weight)
-                
-        elif method == 'inverse':
-            # 方法2: 逆频率
-            total = sum(label_counts.values())
-            weights = [total / (count + 1e-6) for count in label_counts.values()]
-            # 归一化
-            weights = [w / sum(weights) for w in weights]
-
-        elif method == 'log':
-            # 方法3: 对数逆频率（平滑）
-            total = sum(label_counts.values())
-            weights = [np.log(total / (count + 1e-6)) for count in label_counts.values()]
-            # 归一化
-            weights = [w / sum(weights) for w in weights]
-
-        else:
-            raise ValueError(f"Unknown method: {method}")
-
-        logging.info(f"类别权重: {weights}")
-        return weights
+    
 
     @staticmethod
     def appraise_relation_model(model, dataloader, id2label, device):
@@ -135,7 +64,7 @@ class RelationUtils:
                 texts = batch.get('text', [''] * len(input_ids))
                 entity_ones = batch.get('entity_one', [''] * len(input_ids))
                 entity_twos = batch.get('entity_two', [''] * len(input_ids))
-                loss,logits = model(input_ids,attention_mask,labels)
+                logits = model(input_ids,attention_mask)
                 # 获取预测结果
                 probs = torch.softmax(logits, dim=1)
                 predictions = torch.argmax(logits, dim=1)
@@ -238,7 +167,7 @@ class RelationUtils:
         ):
             detailed.append({
                 'index': i,
-                'text': text[:100] + '...' if len(text) > 100 else text,
+                'text': text,
                 'entity_one': entity1,
                 'entity_two': entity2,
                 'true_label': true,
