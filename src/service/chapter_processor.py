@@ -4,7 +4,7 @@ import logging
 import os
 
 from models.inference_pipeline import InferencePipeline
-from models.util.inference_utils import InferenceUtils
+from models.util.models_utils import  ModelsUtils
 from service.chapter_storage import ChapterStorage
 from tools.utils.log_and_catch import log_and_catch
 from utils.config import *
@@ -22,7 +22,7 @@ class ChapterProcessor:
     def process_text_context(self,context,title):
         graph_chapter_segment_list = []
         chroma_vector_data_list = []
-        sentence_list = InferenceUtils.handle_context(context)
+        sentence_list = ModelsUtils.handle_context(context)
         number = self.inferencePipeline.json_file_data_num()
         unique_chapters = number + 1
         chroma_vector_data_list,graph_segment_list =self.inferencePipeline.extract_segment(sentence_list, unique_chapters, chroma_vector_data_list)
@@ -46,7 +46,7 @@ class ChapterProcessor:
         for index, file_path in enumerate(self.txt_file_path_list):
             file_name = os.path.basename(file_path)
             unique_chapters = FileUtils.extract_chapter_id(file_name)
-            sentence_list = InferenceUtils.split_into_sentences(file_path)
+            sentence_list = ModelsUtils.split_into_sentences(file_path)
             chroma_vector_data_list,graph_segment_list = self.inferencePipeline.extract_segment(sentence_list,unique_chapters,chroma_vector_data_list)
             graph_chapter_segment_list.append({
                 'chapter_id': unique_chapters,
