@@ -10,16 +10,19 @@ class ConfigText:
 
     # 数据路径
     text_train_path = os.path.join(MANUAL_DATA_DIR, TEXT_TRAIN_NAME)
-
+    text_validation_path = os.path.join(VALIDATION_DATA_DIR, TEXT_VALIDATION_NAME)
+    # 评估模型数据
+    appraise_text_data_path = os.path.join(APPRAISE_DATA_DIR, APPRAISE_TEXT_DATA_NAME)
+    
     # 新模型路径
     text_train_model_name = os.path.join(MODELS_DATA_DIR, TEXT_RECOGNITION_CHINESE_MAC_BERT_NAME)
 
     # 训练参数
     text_max_length = 256          # 最大序列长度
-    text_batch_size =5              # 批次大小
-    text_epochs = 2                # 训练轮数
-    text_bert_lr = 1e-5            # BERT层学习率
-    text_classifier_lr = 3e-5      # 分类层学习率
+    text_batch_size =21             # 批次大小
+    text_epochs = 3                # 训练轮数
+    text_bert_lr = 2e-5            # BERT层学习率
+    text_classifier_lr = 4e-5      # 分类层学习率
     text_weight_decay = 0.01       # 权重衰减
     text_dropout = 0.3             # 防止过拟合
 
