@@ -3,13 +3,15 @@ import logging
 import os
 import torch
 import torch.nn as nn
+from sklearn.metrics import classification_report
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer, get_linear_schedule_with_warmup, AutoConfig
 from tqdm import tqdm
 
 from models.registry.config_text import ConfigText
 from models.training.text.text_classifier import  TextClassifier
-from models.training.text.text_data_set import TextDataset
+from models.training.text.text_data_set import TextDataSet
+from models.util.models_utils import ModelsUtils
 from models.util.text_utils import TextUtil
 
 logging.basicConfig(level=logging.INFO)
@@ -36,15 +38,15 @@ class TextTrain:
         train_data = ConfigText.text_train_path
         max_length = ConfigText.text_max_length
         label2id = ConfigText.label2id
-        train_dataset = TextDataset(train_data, self.tokenizer,max_length,label2id)
-        # 创建数据加载器
+        train_dataset = TextDataSet(train_data, self.tokenizer, max_length, label2id)
+       # 创建数据加载器
         train_loader = DataLoader(
             train_dataset,
             batch_size=ConfigText.text_batch_size,
             shuffle=True  # 每个批次将数据打乱
         )
         return train_loader
-
+    
     def handle_learn_late(self):
         """
         分层学习率
@@ -67,8 +69,8 @@ class TextTrain:
         train_loader = self.handle_train_loader()
         optimizer = torch.optim.AdamW(optimizer_grouped_parameters, weight_decay=ConfigText.text_weight_decay)
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        class_weights = TextUtil.get_class_weights(ConfigText.text_train_path, ConfigText.label2id)
-        loss_fn = nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(device))
+        class_weights = ModelsUtils.get_class_weights(ConfigText.text_train_path, ConfigText.label2id)
+        loss_fn = nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(device),ignore_index=-100)
         # 学习率调度
         total_steps = len(train_loader) * ConfigText.text_epochs
         warmup_steps = int(total_steps * ConfigText.text_warmup_ratio)
@@ -78,7 +80,65 @@ class TextTrain:
             num_training_steps=total_steps
         )
         return scheduler,loss_fn,optimizer,train_loader
+    
+    
+    
+    def validation_text_loader(self):
+        validation_data = ConfigText.text_validation_path
+        max_length = ConfigText.text_max_length
+        label2id = ConfigText.label2id
+        validation_dataset = TextDataSet(validation_data, self.tokenizer, max_length, label2id)
+        # 创建验证集数据加载器
+        validation_loader = DataLoader(
+            validation_dataset,
+            batch_size=ConfigText.text_batch_size,
+            shuffle=False  # 验证集不需要打乱
+        )
+        return validation_loader
+    
+    
+    def validation_data(self,validation_loader,device,loss_fn,epoch):
+        self.model.eval()
+        total_val_loss = 0
+        correct_predictions = 0
+        total_predictions = 0
+        all_preds = []
+        all_labels = []
+        with torch.no_grad():  # 验证时不需要计算梯度
+            for val_batch in tqdm(validation_loader, desc="Validating"):
+                val_input_ids = val_batch['input_ids'].to(device)
+                val_attention_mask = val_batch['attention_mask'].to(device)
+                val_labels = val_batch['label'].to(device)
 
+                # 前向传播
+                val_logits = self.model(val_input_ids, val_attention_mask)
+
+                # 计算验证集Loss
+                val_loss = loss_fn(val_logits, val_labels)
+                total_val_loss += val_loss.item()
+
+                # 计算准确率（可选）
+                preds = torch.argmax(val_logits, dim=1)
+                correct_predictions += (preds == val_labels).sum().item()
+                total_predictions += val_labels.size(0)
+                # ... 计算loss和预测 ...
+                all_preds.extend(preds.cpu().numpy())
+                all_labels.extend(val_labels.cpu().numpy())
+                
+        avg_val_loss = total_val_loss / len(validation_loader)
+        val_accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0
+
+        logger.info(f"Epoch {epoch + 1} validation average loss: {avg_val_loss:.4f}")
+        logger.info(f"Epoch  {epoch + 1} validation accuracy: {val_accuracy:.4f}")
+        report = classification_report(
+            all_labels, all_preds, 
+            labels=list(ConfigText.id2label.keys()),
+            target_names=list(ConfigText.id2label.values()),
+            zero_division=0
+        )
+        logger.info(f"\n分类报告:\n{report}")
+    
+    
     def start_train(self):
 
         scheduler,loss_fn,optimizer,train_loader = self.handle_scheduler()
@@ -95,7 +155,7 @@ class TextTrain:
                 input_ids = batch['input_ids'].to(device)
                 attention_mask = batch['attention_mask'].to(device)
                 labels = batch['label'].to(device)
-                textArray = batch['text']
+                text_array = batch['text']
 
                 # 清空梯度（防止累积）
                 optimizer.zero_grad()
@@ -116,7 +176,7 @@ class TextTrain:
                 total_loss += loss.item()
                 # 【新增】记录异常样本
                 if grad_norm > 70:
-                    logger.info(f" 高梯度样本检测到text: {textArray}")
+                    logger.info(f" 高梯度样本检测到text: {text_array}")
 
                     # 保存这个 batch 的索引，训练结束后去查
                 logger.info(
@@ -124,7 +184,10 @@ class TextTrain:
 
             avg_loss = total_loss / len(train_loader)
             logger.info(f"Epoch {epoch + 1} average loss: {avg_loss:.4f}")
-
+            validation_loader  = self.validation_text_loader()
+            if validation_loader:
+                self.validation_data(validation_loader,device,loss_fn,epoch)
+        
         logger.info("\n训练完成！")
 
         os.makedirs(ConfigText.text_train_model_name, exist_ok=True)

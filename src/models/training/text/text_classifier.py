@@ -18,6 +18,9 @@ class TextClassifier(nn.Module):
         self.dropout = nn.Dropout(ConfigText.text_dropout)
         self.classifier = nn.Linear(self.config.hidden_size, num_labels)
 
+        # 损失函数
+        self.loss_fn = nn.CrossEntropyLoss()
+
     def forward(self, input_ids, attention_mask):
         outputs = self.bert(
             input_ids=input_ids,
@@ -27,6 +30,7 @@ class TextClassifier(nn.Module):
         pooled = outputs.last_hidden_state[:, 0, :]
         pooled = self.dropout(pooled)
         logits = self.classifier(pooled)
+        
         return logits
 
     def load_trained_model(self,text_train_model_dir):

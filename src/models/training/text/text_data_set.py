@@ -3,7 +3,7 @@ import torch
 from torch.utils.data import Dataset
 import json
 
-class TextDataset(Dataset):
+class TextDataSet(Dataset):
     def __init__(self, data_path, tokenizer, max_length, label2id):
         self.tokenizer = tokenizer
         self.max_length = max_length
