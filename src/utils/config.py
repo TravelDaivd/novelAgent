@@ -1,5 +1,7 @@
 import os
 
+from dotenv import load_dotenv
+
 # 获取项目根目录路径
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
@@ -14,12 +16,10 @@ PROCESSED_DATA_DIR = os.path.join(DATA_DIR, 'processed')
 SHARED_DATA_DIR = os.path.join(MODELS_DATA_DIR, 'shared')
 # 基本模型
 CHINESE_MAC_BERT_BASE_NAME = 'chinese_macBert_base'
-CHINESE_MAC_BERT_BASE_SAFETENSORS_NAME = 'chinese_macBert_base_safetensors'
 BGE_SMALL_ZH_NAME = 'bge_small_zh_v1.5'
 
 # 小说-人物识别模型
 PERSON_RECOGNITION_CHINESE_MAC_BERT_NAME = 'person_recognition_macBert'
-SAFETENSORS_PERSON_RECOGNITION_CHINESE_MAC_BERT_NAME = 'safetensors_person_recognition_macBert'
 # 小说-关系抽取模型
 RELATION_RECOGNITION_CHINESE_MAC_BERT_NAME = 'relation_recognition_macBert'
 # 小说-文本分类模型
@@ -31,6 +31,14 @@ MANUAL_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, 'manual')
 PERSON_TRAIN_NAME='person_train.json'
 RELATION_TRAIN_NAME='relation_train.json'
 TEXT_TRAIN_NAME='text_train.json'
+
+# 训练模型验证集数据
+VALIDATION_DATA_DIR = os.path.join(MANUAL_DATA_DIR, 'validation')
+PERSON_VALIDATION_NAME='person_validation.json'
+RELATION_VALIDATION_NAME='relation_validation.json'
+TEXT_VALIDATION_NAME='text_validation.json'
+
+
 
 # 自动标注数据
 AUTO_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, 'auto')
@@ -80,6 +88,7 @@ NOVEL_AUTO_MARGINALIA_AFTER_NAME = 'novel_auto_annotated_data.json'
 
 
 #大模型
+load_dotenv()
 DEEPSEEK_API_KEY= os.getenv('DEEPSEEK_API_KEY', '')
 DEEPSEEK_URL = 'https://api.deepseek.com/v1'
 
