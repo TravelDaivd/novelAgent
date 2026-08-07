@@ -39,33 +39,55 @@ class NerUtils:
         """
         true_labels = []
         pred_labels = []
+        person_text = []
+        mismatch_count = 0  # 记录长度不一致的样本数
         with torch.no_grad():
             for batch in dataloader:
                 input_ids = batch['input_ids'].to(device)
                 attention_mask = batch['attention_mask'].to(device)
                 labels = batch['label'].cpu().numpy()
+                texts = batch["text"]
                 # 获取 logits 并取 argmax
                 logit_list = model.model_predict(input_ids, attention_mask)
                 for index,logit in enumerate(logit_list) :
                     preds = torch.argmax(logit, dim=-1).cpu().numpy()
-                    seq_len = attention_mask[index].sum().item()
-                    valid_label_list = labels[index][1:seq_len-1]
+                    valid_seq_len = len(preds)
+                    
+                    total_seq_len = attention_mask[index].sum().item()
+                    valid_label_list = labels[index][1:total_seq_len-1]
+
+                    # 【修复】如果长度不一致，记录并取交集（对齐到较短的那个）
+                    if valid_seq_len != len(valid_label_list):
+                        mismatch_count += 1
+                        # 如果差异太大（>5），打印警告
+                        if abs(valid_seq_len - len(valid_label_list)) > 5:
+                            logger.warning(f"长度差异过大: preds={valid_seq_len}, labels={len(valid_label_list)}")
+                    
+                    
+                    
+                    
+                    # 5. 如果长度不一致，取较小的那个（防御性编程）
+                    min_len = min(valid_seq_len, len(valid_label_list))
+                    preds = preds[:min_len]
+                    valid_label_list = valid_label_list[:min_len]
+                    
                     true_seq = []
                     pred_seq_clean = []
                     for pred, label in zip(preds, valid_label_list):
-                        if label != -100:
+                        if label != -100 and pred != -100:
                             true_seq.append(id2label.get(int(label), "O"))
                             pred_seq_clean.append(id2label.get(int(pred), "O"))
                     if true_seq and pred_seq_clean:
                         true_labels.append(true_seq)
                         pred_labels.append(pred_seq_clean)
-
-        return true_labels, pred_labels 
+                        person_text.append(texts[index])
+        logger.info(f"长度不一致的样本数: {mismatch_count} / {len(true_labels)}")
+        return true_labels, pred_labels,person_text 
     
     
 
     @staticmethod
-    def appraise_model_result(true_labels, pred_labels):
+    def appraise_model_result(true_labels, pred_labels,person_text):
         # 输出分类报告（每个实体类型的精确率/召回率/F1）
         logger.info("\n" + "=" * 60)
         logger.info("分类报告")
@@ -112,13 +134,13 @@ class NerUtils:
         logger.info("错误分析（前5个错误样本）")
         logger.info("=" * 60)
         error_count = 0
-        for i, (true, pred) in enumerate(zip(true_labels, pred_labels)):
+        for i, (true, pred,text) in enumerate(zip(true_labels, pred_labels,person_text)):
             if true != pred:
                 error_count += 1
-                if error_count <= 5:
-                    logger.info(f"\n样本 {i + 1}:")
-                    logger.info(f"  真实: {true[:50]}...")
-                    logger.info(f"  预测: {pred[:50]}...")
+                if error_count <= 9:
+                    logger.info(f"\n样本 {text}:")
+                    logger.info(f"  真实: {true}...")
+                    logger.info(f"  预测: {pred}...")
         logger.info(f"\n总错误样本数: {error_count} / {len(true_labels)}")
         logger.info(f"准确率 (Accuracy): {(len(true_labels) - error_count) / len(true_labels):.4f}")
 
