@@ -69,8 +69,12 @@ class ChromaVectorIndexer(EmbeddingFunction):
         return self
 
     def vector_get_segment_by_label(self, chapter_ids: list[int], labels: list[str]):
-        self._where["chapter_id"] = {"$in": chapter_ids}
-        self._where["label"] = {"$in": labels}
+        self._where={
+            "$and":[
+                {"chapter_id":{"$in": chapter_ids}},
+                {"label": {"$in": labels}}
+            ]
+        }
         return self
 
     def vector_get_segments(self, semgment_ids: list[str]):
@@ -155,8 +159,8 @@ class ChromaVectorIndexer(EmbeddingFunction):
 
 if __name__ == "__main__":
     chromaVectorIndexer = ChromaVectorIndexer()
-    segment_ids = ['seg_11_1', 'seg_10_2', 'seg_11_4', 'seg_10_4', 'seg_11_5', 'seg_10_5', 'seg_11_6', 'seg_10_8', 'seg_11_9', 'seg_10_9', 'seg_11_10', 'seg_11_11', 'seg_11_12', 'seg_10_12', 'seg_11_16', 'seg_10_16', 'seg_10_17', 'seg_11_18', 'seg_10_18', 'seg_10_19']
-    logger.info(f"参数个数：{len(segment_ids)}")
-    chromaVectorIndexer.semantic_search("第10、11章发生了什么事情？主要描述谁的？有没有我喜欢的打斗环节")
-    chromaVectorIndexer.get_segments(segment_ids)
+  #  segment_ids = ['seg_11_1', 'seg_10_2', 'seg_11_4', 'seg_10_4', 'seg_11_5', 'seg_10_5', 'seg_11_6', 'seg_10_8', 'seg_11_9', 'seg_10_9', 'seg_11_10', 'seg_11_11', 'seg_11_12', 'seg_10_12', 'seg_11_16', 'seg_10_16', 'seg_10_17', 'seg_11_18', 'seg_10_18', 'seg_10_19']
+   # logger.info(f"参数个数：{len(segment_ids)}")
+    chromaVectorIndexer.semantic_search("对方是怎么死的？..")
+    chromaVectorIndexer.vector_get_segment_by_label([10, 11],['战斗'])
     logger.info(chromaVectorIndexer.build_raw())
