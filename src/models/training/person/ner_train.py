@@ -51,7 +51,12 @@ class NerTrain:
             batch_size=ConfigPerson.person_batch_size,
             shuffle=True  # 每个批次将数据打乱
         )
+        
         return train_loader
+    
+   
+    
+    
     def handle_learn_late(self):
         """
         # 分层学习率
@@ -76,7 +81,6 @@ class NerTrain:
         """
         optimizer_grouped_parameters = self.handle_learn_late()
         train_loader = self.handle_train_loader()
-        
         optimizer = torch.optim.AdamW(optimizer_grouped_parameters, weight_decay=ConfigPerson.weight_decay)
         total_steps = len(train_loader) * ConfigPerson.person_epochs
         warmup_steps = int(total_steps * ConfigPerson.person_warmup_ratio)
@@ -86,6 +90,66 @@ class NerTrain:
             num_training_steps=total_steps
         )
         return scheduler,train_loader,optimizer
+
+    def validation_person_loader(self):
+        validation_data = ConfigPerson.person_validation_data_path
+        max_length = ConfigPerson.person_max_length
+        label2id = ConfigPerson.label2id
+        person_validation_data_set = NerDataSet(validation_data, self.tokenizer, max_length, label2id)
+        validation_train_loader = DataLoader(
+            person_validation_data_set,
+            batch_size=ConfigPerson.person_batch_size,
+            shuffle=False  # 每个批次将数据打乱
+        )
+        return validation_train_loader
+    
+
+    def validation_data(self, validation_loader, device, epoch):
+        self.model.eval()
+        total_val_loss = 0
+        correct_predictions = 0
+        total_predictions = 0
+        all_preds = []
+        all_labels = []
+        with torch.no_grad():  # 验证时不需要计算梯度
+            for val_batch in tqdm(validation_loader, desc="Validating"):
+                val_input_ids = val_batch['input_ids'].to(device)
+                val_attention_mask = val_batch['attention_mask'].to(device)
+                val_labels = val_batch['label'].to(device)
+
+                # 前向传播 （预测 VS 真实）
+                val_loss, val_logits = self.model(val_input_ids, val_attention_mask, val_labels)
+                # 计算验证集Loss
+                total_val_loss += val_loss.item()
+                # 获取预测结果
+                preds = torch.argmax(val_logits, dim=-1)  # shape: (batch_size, seq_len)
+                # 创建掩码，忽略特殊token (如PAD)
+                mask = (val_labels != -100)  # 假设-100是忽略标签
+
+                # 只计算有效位置的准确率
+                valid_preds = preds[mask]
+                valid_labels = val_labels[mask]
+
+                correct_predictions += (valid_preds == valid_labels).sum().item()
+                total_predictions += valid_labels.size(0)
+
+                # 收集所有预测和标签（用于分类报告）
+                all_preds.extend(valid_preds.cpu().numpy())
+                all_labels.extend(valid_labels.cpu().numpy())
+
+        avg_val_loss = total_val_loss / len(validation_loader)
+        val_accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0
+
+        logger.info(f"Epoch {epoch + 1} validation average loss: {avg_val_loss:.4f}")
+        logger.info(f"Epoch  {epoch + 1} validation accuracy: {val_accuracy:.4f}")
+        report = classification_report(
+            all_labels, all_preds,
+            labels=list(ConfigPerson.id2label.keys()),
+            target_names=list(ConfigPerson.id2label.values()),
+            zero_division=0
+        )
+        logger.info(f"\n分类报告:\n{report}")
+    
     
     
     def start_train(self):
@@ -146,7 +210,11 @@ class NerTrain:
 
             avg_loss = total_loss / len(train_loader)
             logger.info(f"Epoch {epoch + 1} average loss: {avg_loss:.4f}")
-
+            
+            validation_train_loader =  self.validation_person_loader()
+            if validation_train_loader:
+                self.validation_data(validation_train_loader,device,epoch)
+        
         logger.info("\n训练完成！")
 
         os.makedirs(ConfigPerson.person_train_model_name, exist_ok=True)

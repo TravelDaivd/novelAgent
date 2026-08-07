@@ -6,6 +6,7 @@ import torch.nn as nn
 from transformers import AutoModel, AutoConfig
 
 from models.registry.config_person import ConfigPerson
+from models.util.models_utils import ModelsUtils
 
 
 class NerClassifier(nn.Module):
@@ -16,8 +17,8 @@ class NerClassifier(nn.Module):
         self.bert = AutoModel.from_pretrained(model_name)
         self.dropout = nn.Dropout(ConfigPerson.person_dropout)
         self.classifier = nn.Linear(self.config.hidden_size, num_labels)
-        # 损失函数
-        self.loss_fn = nn.CrossEntropyLoss(ignore_index=-100)
+        
+        
     
     def forward(self, input_ids, attention_mask, labels=None):
         # 1. BERT 编码
@@ -29,7 +30,10 @@ class NerClassifier(nn.Module):
         logits = self.classifier(sequence_output)  # [batch, seq_len, num_labels]
         
         if labels is not None:
-            loss = self.loss_fn(logits.view(-1, ConfigPerson.num_labels), labels.view(-1))
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            class_weights = ModelsUtils.get_class_weights(ConfigPerson.person_train_model_name,ConfigPerson.label2id)
+            loss_fn = nn.CrossEntropyLoss(weight=torch.tensor(class_weights).to(device), ignore_index=-100)
+            loss = loss_fn(logits.view(-1, ConfigPerson.num_labels), labels.view(-1))
             return loss, logits
 
         batch_size = logits.size(0)

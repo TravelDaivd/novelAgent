@@ -56,6 +56,7 @@ class NerDataSet(Dataset, metaclass=ABCMeta):
             'input_ids': encoding['input_ids'].squeeze(0),
             'attention_mask': encoding['attention_mask'].squeeze(0),
             'offset_mapping': encoding['offset_mapping'][0],
+            "text":text,
             'label': torch.tensor(aligned_labels, dtype=torch.long)
         }
 
@@ -76,8 +77,8 @@ class NerDataSet(Dataset, metaclass=ABCMeta):
                 
             # 2. 由于offset_mapping的长度=Max_length;检查 token 是否在有效范围内
             if end > len(char_labels) or start >= len(char_labels):
-                # token 被截断或越界，标记为 "O"
-                aligned.append(label2id.get("O", 0))
+                # token 被截断或越界，标记为 "-100"
+                aligned.append(-100)
                 continue
             label = char_labels[start]
             # 4. 安全查找 label id
@@ -99,6 +100,8 @@ class NerDataSet(Dataset, metaclass=ABCMeta):
         :return: 
         """
         char_labels = ["O"] * len(text)
+        entities = sorted(entities, key=lambda x: x['start'])
+        overlap_count = 0
         for ent in entities:
             start = ent['start']
             end = ent['end']
@@ -106,13 +109,25 @@ class NerDataSet(Dataset, metaclass=ABCMeta):
             if start < 0 or end > len(text) or start >= end:
                 logging.warning(f"Invalid entity position: {ent}")
                 continue
-
-            # B-人物（第一个字符）
-            char_labels[start] = "B-PER"
-            # I-人物（后续字符）
-            for i in range(start + 1, end):
-                if i < len(char_labels):
-                    char_labels[i] = "I-PER"
+            # 【新增】检查该区间是否已被标注
+            already_labeled = any(label != "O" for label in char_labels[start:end])
+            
+            if already_labeled:  # 如果区间内已有实体标签
+                overlap_count += 1
+                # 只标注未被覆盖的部分
+                for i in range(start, end):
+                    if char_labels[i] == "O":  # 只标注空位
+                        char_labels[i] = "I-PER" if i > start else "B-PER"
+                
+                logging.info(f"Total overlapping entities: {overlap_count}")
+            
+            else:
+                # B-人物（第一个字符）
+                char_labels[start] = "B-PER"
+                # I-人物（后续字符）
+                for i in range(start + 1, end):
+                    if i < len(char_labels):
+                        char_labels[i] = "I-PER"
 
         return char_labels
 
