@@ -23,7 +23,7 @@ class RelationDataSet(Dataset, metaclass=ABCMeta):
                 self.dataArray.extend(data)
             else:
                 self.dataArray.append(data)
-                
+        
         self.relation_data =[]
         for item in self.dataArray :
             text =  item.get("text")
@@ -38,9 +38,9 @@ class RelationDataSet(Dataset, metaclass=ABCMeta):
                         "label": relation.get("relation", "")
                     })
         logging.info(f"关系抽取训练数据数量：{len(self.relation_data)}")
-        
 
     def __len__(self):
+        
         return len(self.relation_data)
 
     def encode_for_training(self, text, entity_one, entity_two, label):

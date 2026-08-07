@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 
 import torch
@@ -6,7 +7,7 @@ from torch import nn
 from transformers import AutoConfig, AutoModel
 
 from models.registry.config_relation import ConfigRelation
-from models.util.relation_utils import RelationUtils
+from models.util.models_utils import ModelsUtils
 
 
 class RelationClassifier(nn.Module):
@@ -17,12 +18,15 @@ class RelationClassifier(nn.Module):
         self.bert = AutoModel.from_pretrained(model_name)
         self.dropout = nn.Dropout(ConfigRelation.relation_dropout)
         self.classifier = nn.Linear(self.config.hidden_size, num_labels)
-        # 损失函数
-        self.loss_fn = nn.CrossEntropyLoss()
         
-    def forward(self, input_ids, attention_mask, labels=None):
+    def forward(self, input_ids, attention_mask, labels=None,**kwargs):
         """
-           前向传播 - 适配数据格式
+         forward 方法
+        :param input_ids: 输入 token IDs
+        :param attention_mask: 注意力掩码
+        :param labels: 标签（可选，训练时传入）
+        :param kwargs: 吸收 PEFT 传入的其他参数（如 inputs_embeds）
+        :return:
         """
         # 1. BERT 编码
         outputs = self.bert(
@@ -41,8 +45,15 @@ class RelationClassifier(nn.Module):
         logits = self.classifier(pooled)
         # 4. 计算损失（如果提供了标签）
         if labels is not None:
-            loss = self.loss_fn(logits, labels)
-            return loss,logits
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            class_weights = ModelsUtils.get_class_weights(ConfigRelation.relation_train_data_path,ConfigRelation.label2id)
+            class_weights_loss_fn = torch.tensor(class_weights).to(device)
+            loss_fn = nn.CrossEntropyLoss(weight=class_weights_loss_fn, ignore_index=-100)
+            loss = loss_fn(logits, labels)
+            return {
+                "loss":loss,
+                "logits":logits
+            }
 
         return logits
 
@@ -76,8 +87,8 @@ class RelationClassifier(nn.Module):
                 num_labels=len(config_info['label2id'])
             )
 
-            # 3. 加载训练好的权重
-            model_path = os.path.join(relation_train_model_dir, 'pytorch_model.bin')
-            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-            model.load_state_dict(torch.load(model_path, map_location=device))
-            return model
+        # 3. 加载训练好的权重
+        model_path = os.path.join(relation_train_model_dir, 'pytorch_model.bin')
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        model.load_state_dict(torch.load(model_path, map_location=device))
+        return model
