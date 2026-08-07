@@ -32,10 +32,10 @@ class InferencePipeline:
         self.txt_file_path_list = glob.glob(os.path.join(RAW_DATA_DIR, "*.txt"))
         self.text_predict = TextPredict(ConfigText.text_train_model_name,self.device)
         self.ner_predict = NerPredict(ConfigPerson.person_train_model_name,self.device)
-        self.relationPredict = RelationPredict(ConfigRelation.relation_train_model_name, self.device)
-        self.text_threshold = 0.76  # 置信度阈值
-        self.ner_threshold = 0.59  # 置信度阈值
-        self.relation_threshold = 0.40  # 置信度阈值
+        self.relationPredict = RelationPredict(ConfigRelation.relation_train_model_name)
+        self.text_threshold = 0.67  # 置信度阈值
+        self.ner_threshold = 0.97  # 置信度阈值
+        self.relation_threshold = 0.57  # 置信度阈值
         self.write_graph_file_path = os.path.join(SPLITS_DATA_DIR, GRAPH_SEGMENT_DATA)
         self.write_chroma_file_path = os.path.join(SPLITS_DATA_DIR, CHROMA_VECTRO_SEGMENT_DATA)
 
