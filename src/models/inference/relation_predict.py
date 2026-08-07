@@ -3,13 +3,14 @@ import logging
 import os
 
 import torch
+from peft import LoraConfig, TaskType, get_peft_model
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 
 from models.registry.config_relation import ConfigRelation
 from models.training.relation.relation_classifier import RelationClassifier
 from models.training.relation.relation_data_set import RelationDataSet
-from models.util.inference_utils import InferenceUtils
+from models.util.models_utils import ModelsUtils
 from models.util.relation_utils import RelationUtils
 from utils.config import *
 
@@ -19,30 +20,36 @@ class RelationPredict:
     
     
     
-    def __init__(self,relation_recognition_dir,device):
+    def __init__(self,relation_recognition_dir):
         # 1. 加载 tokenizer
         self.tokenizer = AutoTokenizer.from_pretrained(relation_recognition_dir)
-        self.model = self.load_model(relation_recognition_dir,device)
+        self.model = self.load_model(relation_recognition_dir)
     
     @staticmethod
-    def load_model(relation_recognition_dir,device):
+    def load_model(relation_recognition_dir):
         """
          加载新训练的模型
         """
-        # 1. 加载配置
-        with open(os.path.join(relation_recognition_dir, 'config.json'), 'r') as f:
-            config = json.load(f)
-        # 2. 重建模型
-        model = RelationClassifier(
-            model_name=config['model_name'],
-            num_labels=len(config['id2label'])
-        )
-        # 3. 加载权重
-        model_path = os.path.join(relation_recognition_dir, 'pytorch_model.bin')
-        model.load_state_dict(torch.load(model_path, map_location=device))
-        model.to(device)
-        model.eval()
-        return model 
+        files = os.listdir(relation_recognition_dir)
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        if 'adapter_config.json' in files and 'adapter_model.safetensors' in files:
+            model = ModelsUtils.load_lora_model(
+                base_model_dir=ConfigRelation.relation_model_name,
+                train_after_model_dir=relation_recognition_dir,
+                label_num=len(ConfigRelation.label2id),
+                model_class=RelationClassifier
+            )
+            model.to(device)
+            model.eval()
+            return model
+        else:
+            model = ModelsUtils.load_all_model(
+                train_after_model_dir=relation_recognition_dir,
+                model_class=RelationClassifier
+            )
+            model.to(device)
+            model.eval()
+            return model
 
     def encode_for_predict(self, text, entity_one, entity_two):
         """
@@ -115,42 +122,44 @@ class RelationPredict:
         
         
 if __name__ == "__main__":
-    threshold = 0.40
+    threshold = 0.60
     
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    relationPredict = RelationPredict(ConfigRelation.relation_train_model_name, device)
     
+    relationPredict = RelationPredict(ConfigRelation.relation_train_model_name)
+
     """
     relationPredict.apraise_model_after_data()
     """
-    auto_relation_marginalia_name = os.path.join(AUTO_DATA_DIR, AUTO_RELATION_MARGINALIA_NAME)
-    with open(auto_relation_marginalia_name, 'r', encoding='utf-8') as file:
+    auto_person_marginalia_name = os.path.join(AUTO_DATA_DIR, AUTO_PERSON_MARGINALIA_NAME)
+    with open(auto_person_marginalia_name, 'r', encoding='utf-8') as file:
         data_list = json.load(file)
         relation_train_data = []
-        for item in data_list:
+        for index,item in enumerate(data_list):
             text  = item.get("text")
             relation_data = []
-            for relation in item.get("relations", []):
-                entity_values = [v for k, v in relation.items() if k.startswith("entity")]
-                entity_key = [k for k, v in relation.items() if k.startswith("entity")]
-                if len(entity_values) >= 2:
-                    entity_one =  entity_values[0]
-                    entity_two = entity_values[1]
-                    label,confidence = relationPredict.predict_with_threshold(text,entity_one,entity_two,threshold)
+            entity_names = [entity["name"] for entity in item.get("entities")]
+            if len(entity_names) == 1 :continue
+            logger.info(text)
+            
+            for i in range(len(entity_names)):
+                for j in range(i + 1, len(entity_names)):
+                    if entity_names[i] == entity_names[j]: continue
+                    label, confidence = relationPredict.predict_with_threshold(text, entity_names[i],entity_names[j],threshold)
+                    if label == "未知" :continue
                     relation_data.append({
-                        f"{entity_key[0]}": entity_one,
-                        f"{entity_key[1]}": entity_two,
+                        f"entity1": entity_names[i],
+                        f"entity2": entity_names[j],
                         "relation": label,
-                        "confidence": f"{float(confidence):.2f}" 
+                        "confidence": f"{float(confidence):.2f}"
                     })
 
             relation_train_data.append({
                 "text": text,
                 "relations": relation_data,
             })
-        output_file = os.path.join(SPLITS_DATA_DIR, "relation_train_data.json")
+        output_file = os.path.join(AUTO_DATA_DIR, AUTO_RELATION_MARGINALIA_NAME)
         # 保存去重后的数据
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(relation_train_data, f, ensure_ascii=False, indent=2)
         
-        
+     

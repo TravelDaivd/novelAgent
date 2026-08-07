@@ -10,7 +10,7 @@ from transformers import AutoTokenizer
 from models.registry.config_person import ConfigPerson
 from models.training.person.ner_classifier import NerClassifier
 from models.training.person.ner_data_set import NerDataSet
-from models.util.inference_utils import InferenceUtils
+from models.util.models_utils import ModelsUtils
 from models.util.ner_utils import NerUtils
 from utils.config import *
 
@@ -104,7 +104,7 @@ class NerPredict:
                 continue
             # 获取标签名称
             label_name = ConfigPerson.id2label.get(label_id, "O")
-            
+
             # 检查是否是实体开始 (B-*)
             if label_name.startswith("B-PER"):
                 # 记录起始位置和置信度
@@ -126,22 +126,35 @@ class NerPredict:
                         break
                 # 计算平均置信度
                 avg_confidence = sum(confidence_list) / len(confidence_list) if confidence_list else 0.0
-                # 获取实体结束位置
-                end_char = offset_mapping[j - 1][1]
-                # 提取实体文本
-                entity_text = text[start_char:end_char].strip()
-                # 过滤空实体和低置信度
-                if len(entity_text) > 0 and  avg_confidence > threshold:
-                    entities.append({
-                        "name": entity_text,
-                        "start": int(start_char),
-                        "end": int(end_char),
-                        "confidence": f"{float(avg_confidence):.2f}"    
-                    })
+
+                # 【修改点】只有平均置信度 >= threshold 才加入实体
+                if avg_confidence >= threshold:
+                    # 获取实体结束位置
+                    end_char = offset_mapping[j - 1][1]
+                    # 提取实体文本
+                    entity_text = text[start_char:end_char].strip()
+                    # 过滤空实体
+                    if len(entity_text) > 1 :
+                        entities.append({
+                            "name": entity_text,
+                            "start": int(start_char),
+                            "end": int(end_char),
+                            "confidence": f"{float(avg_confidence):.2f}"
+                        })
                 i = j
             else:
                 i += 1
-        return entities
+        # 去重逻辑保持不变
+        entities.sort(key=lambda x: len(x['name']), reverse=True)
+        unique_entities = {}
+        for ent in entities:
+            name = ent['name']
+            confidence = float(ent['confidence'])
+            if name not in unique_entities or confidence > float(unique_entities[name]['confidence']):
+                unique_entities[name] = ent
+
+        return list(unique_entities.values())
+        
     
     
     
@@ -157,8 +170,8 @@ class NerPredict:
             shuffle=True  # 每个批次将数据打乱
         )
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        true_labels, pred_labels = NerUtils.appraise_ner_model(self.model,train_loader,ConfigPerson.id2label,device)
-        NerUtils.appraise_model_result(true_labels,pred_labels)
+        true_labels, pred_labels,person_text = NerUtils.appraise_ner_model(self.model,train_loader,ConfigPerson.id2label,device)
+        NerUtils.appraise_model_result(true_labels,pred_labels,person_text)
     
     
     
@@ -167,20 +180,21 @@ class NerPredict:
 
 # 使用示例
 if __name__ == "__main__":
-    threshold  = 0.59
+    threshold  = 0.97
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     nerPredict =  NerPredict(ConfigPerson.person_train_model_name,device)
-    """ 
+    """
     nerPredict.apraise_model_after_data()
     
     """
     txt_file_path_list = glob.glob(os.path.join(RAW_DATA_DIR, "*.txt"))
     train_data_array = []
     filter_train_data_array = []
-    for index, file_path in enumerate(txt_file_path_list):
-        sentence_list = InferenceUtils.split_into_sentences(file_path)
+    for index, file_path in enumerate(txt_file_path_list,1):
+        sentence_list = ModelsUtils.split_into_sentences(file_path)
         file_name = os.path.basename(file_path)
+        
         logger.info(f"{index}+{file_name}")
         for text in sentence_list:
             entities = nerPredict.predict_entities(text,device,threshold)
@@ -196,5 +210,5 @@ if __name__ == "__main__":
     auto_person_marginalia_name = os.path.join(AUTO_DATA_DIR, AUTO_PERSON_MARGINALIA_NAME)
     with open(auto_person_marginalia_name, 'w', encoding='utf-8') as file:
         json.dump(train_data_array, file, ensure_ascii=False, indent=2)
-    
-    
+
+   

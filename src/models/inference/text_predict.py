@@ -4,11 +4,14 @@ import logging
 import re
 
 import torch
+from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 
 from models.registry.config_text import ConfigText
 from models.training.text.text_classifier import TextClassifier
-from models.util.inference_utils import InferenceUtils
+from models.training.text.text_data_set import TextDataSet
+from models.util.models_utils import ModelsUtils
+from models.util.text_utils import TextUtil
 from utils.config import *
 
 logging.basicConfig(level=logging.INFO)
@@ -137,13 +140,30 @@ class TextPredict:
             for chapter_segment_data in chapter_segment_node_data:
                 file.write(json.dumps(chapter_segment_data, ensure_ascii=False) + '\n')
 
-
+    def apraise_model_after_data(self):
+        appraise_data = ConfigText.appraise_text_data_path
+        max_length = ConfigText.text_max_length
+        label2id = ConfigText.label2id
+        person_data_set = TextDataSet(appraise_data, self.tokenizer, max_length, label2id)
+        train_loader = DataLoader(
+            person_data_set,
+            batch_size=ConfigText.text_batch_size,
+            shuffle=True  # 每个批次将数据打乱
+        )
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        result = TextUtil.appraise_relation_model(self.model, train_loader, ConfigText.id2label, device)
+        TextUtil.print_error_analysis(result)
 
 if __name__ == "__main__":
     # 配置
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    THRESHOLD = 0.76  # 置信度阈值
-    textPredict = TextPredict(ConfigText.text_train_model_name)
+    THRESHOLD = 0.67  # 置信度阈值
+    textPredict = TextPredict(ConfigText.text_train_model_name,device)
+    """
+    textPredict.apraise_model_after_data()
+    
+    """
+    
     txt_file_path_list = glob.glob(os.path.join(RAW_DATA_DIR, "*.txt"))
     autoPlotMarginalia_list = []
     chrom_db_data_list = []
@@ -153,8 +173,7 @@ if __name__ == "__main__":
         chapter_numbers = re.findall(r'\d+', file_name)
         unique_chapters = list(set(int(num) for num in chapter_numbers))[0]
         logger.info(file_name)
-        
-        sentence_list = InferenceUtils.split_into_sentences(file_path)
+        sentence_list = ModelsUtils.split_into_sentences(file_path)
         # 3. 批量预测并过滤
         valid_result_array, filtered_text_array = textPredict.batch_predict_with_filter(
             texts=sentence_list,
@@ -167,16 +186,18 @@ if __name__ == "__main__":
         chrom_db_data,text_node_data = textPredict.chromDBTwo(valid_result_array,unique_chapters,file_name)
         chapter_segment_list.append(text_node_data)
         chrom_db_data_list.extend(chrom_db_data)
-    json.dumps(autoPlotMarginalia_list, ensure_ascii=False, indent=2)
+    #json.dumps(autoPlotMarginalia_list, ensure_ascii=False, indent=2)
     #textPredict.predict_after_ata(chrom_db_data_list)
-    textPredict.chapter_segment_data(chapter_segment_list)
+   # textPredict.chapter_segment_data(chapter_segment_list)
 
 
     # 保存到文件
     auto_plot_marginalia = os.path.join(AUTO_DATA_DIR, AUTO_TEXT_MARGINALIA_NAME)
+    # 直接写入文件
     with open(auto_plot_marginalia, 'w', encoding='utf-8') as file:
-        for autoTextMarginalia in autoPlotMarginalia_list :
-            file.write(json.dumps(autoTextMarginalia, ensure_ascii=False) + '\n')
+        json.dump(autoPlotMarginalia_list, file, ensure_ascii=False, indent=2)
+        #for autoTextMarginalia in autoPlotMarginalia_list :
+         #   file.write(json.dumps(autoTextMarginalia, ensure_ascii=False) + '\n')
 
 
 
