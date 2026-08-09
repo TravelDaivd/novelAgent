@@ -26,7 +26,7 @@ class TextPredict:
     def load_mode(text_recognition_dir,device):
         with open(os.path.join(ConfigText.text_train_model_name, 'config.json'), 'r') as file:
               config = json.load(file)
-        model = TextClassifier(config['model_name'],len(config['id2label']))
+        model = TextClassifier(ConfigText.text_train_model_name,len(config['id2label']))
         model_path = os.path.join(text_recognition_dir, 'pytorch_model.bin')
         model.load_state_dict(torch.load(model_path, map_location=device))
         model.to(device)

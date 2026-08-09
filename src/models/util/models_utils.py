@@ -63,7 +63,7 @@ class ModelsUtils:
             # 2. 重建模型（必须和训练时结构一致）
 
             model = model_class(
-                model_name=config_info['model_name'],
+                model_name=train_after_model_dir,
                 num_labels=len(config_info['label2id'])
             )
 

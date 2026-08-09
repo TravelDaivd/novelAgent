@@ -39,8 +39,8 @@ class TextClassifier(nn.Module):
             config_info = json.load(file)
             # 2. 重建模型（必须和训练时结构一致）
             model = TextClassifier(
-                model_name=config_info['model_name'],
-                num_labels=len(config_info["id2label"])
+                model_name=ConfigText.text_train_model_name,
+                num_labels=ConfigText.num_labels
             )
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             # 3. 加载训练好的权重

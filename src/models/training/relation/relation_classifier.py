@@ -83,8 +83,8 @@ class RelationClassifier(nn.Module):
             # 2. 重建模型（必须和训练时结构一致）
             
             model = RelationClassifier(
-                model_name=config_info['model_name'],
-                num_labels=len(config_info['label2id'])
+                model_name=ConfigRelation.relation_train_model_name,
+                num_labels=ConfigRelation.num_labels
             )
 
         # 3. 加载训练好的权重

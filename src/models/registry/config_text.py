@@ -7,6 +7,9 @@ from utils.config import *
 class ConfigText:
     # 模型路径
     text_model_name = os.path.join(SHARED_DATA_DIR, CHINESE_MAC_BERT_BASE_NAME)
+    
+    # 新模型路径
+    text_train_model_name = os.path.join(MODELS_DATA_DIR, TEXT_RECOGNITION_CHINESE_MAC_BERT_NAME)
 
     # 数据路径
     text_train_path = os.path.join(MANUAL_DATA_DIR, TEXT_TRAIN_NAME)
@@ -14,9 +17,7 @@ class ConfigText:
     # 评估模型数据
     appraise_text_data_path = os.path.join(APPRAISE_DATA_DIR, APPRAISE_TEXT_DATA_NAME)
     
-    # 新模型路径
-    text_train_model_name = os.path.join(MODELS_DATA_DIR, TEXT_RECOGNITION_CHINESE_MAC_BERT_NAME)
-
+   
     # 训练参数
     text_max_length = 256          # 最大序列长度
     text_batch_size =21             # 批次大小

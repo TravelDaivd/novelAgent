@@ -36,7 +36,7 @@ class NerPredict:
 
         # 2. 重建模型
         model = NerClassifier(
-            model_name=config['model_name'],
+            model_name=ConfigPerson.person_train_model_name,
             num_labels=ConfigPerson.num_labels
         )
         # 3. 加载权重

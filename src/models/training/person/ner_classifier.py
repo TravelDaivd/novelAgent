@@ -77,8 +77,8 @@ class NerClassifier(nn.Module):
             config_info = json.load(file)
             # 2. 重建模型（必须和训练时结构一致）
             model = NerClassifier(
-                model_name=config_info['model_name'],
-                num_labels=len(config_info['label2id'])
+                model_name=ConfigPerson.person_train_model_name,
+                num_labels=ConfigPerson.num_labels
             )
 
             # 3. 加载训练好的权重
