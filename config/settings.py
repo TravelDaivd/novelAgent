@@ -213,7 +213,6 @@ class ModelScopeConfig(BaseModel):
 
 class AppConfig(BaseSettings):
     """应用主配置"""
-
     # 环境标识（自动检测）
     env: str = Field(default_factory=detect_env)
 
