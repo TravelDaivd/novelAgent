@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import List
 
 import chromadb
@@ -41,14 +42,14 @@ class ToolUtils:
 
     def chroma_db_model(self):
         # 1. 加载中文嵌入模型下载到本地了
-        model_file_path = os.path.join(SHARED_DATA_DIR, BGE_SMALL_ZH_NAME)
+        model_file_path = os.path.join(VECTOR_DATABASES_DATA_DIR, BGE_SMALL_ZH_NAME)
         logger.info(f"检查模型目录: {model_file_path}")
         if os.path.exists(model_file_path):
             logger.info("模型目录存在")
         logger.info("正在加载模型...")
         try:
             model = SentenceTransformer(model_file_path, device='cpu')  # 效果和速度的绝佳平衡
-            logger.info(f"模型加载成功，向量维度: {model.get_sentence_embedding_dimension()}")
+            logger.info(f"模型加载成功，向量维度: {model.get_embedding_dimension()}")
         except Exception as e:
             logger.error(f"模型加载失败: {e}")
         return model
@@ -73,8 +74,8 @@ class ToolUtils:
 
     @staticmethod
     def get_graph_drive():
-        uri = "bolt://localhost:7687"
-        user = "neo4j"
-        password = "gulei511"
+        uri = NEO4J_URL
+        user = NEO4J_USER
+        password = NEO4J_PASSWORD
         graph_drive = GraphDatabase.driver(uri, auth=(user, password))
         return graph_drive
