@@ -1,7 +1,5 @@
 import os
 
-from transformers import BertModel
-
 from utils.config import *
 
 
