@@ -10,6 +10,7 @@ from tools.utils.log_and_catch import log_and_catch
 from utils.config import *
 from utils.file_utils import FileUtils
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 class ChapterProcessor:
     
