@@ -69,12 +69,20 @@ class ChromaVectorIndexer(EmbeddingFunction):
         return self
 
     def vector_get_segment_by_label(self, chapter_ids: list[int], labels: list[str]):
-        self._where={
-            "$and":[
-                {"chapter_id":{"$in": chapter_ids}},
-                {"label": {"$in": labels}}
-            ]
-        }
+        self._where = {}
+        conditions = []
+        if chapter_ids:
+            conditions.append({"chapter_id": {"$in": chapter_ids}})
+        if labels:
+            conditions.append({"label": {"$in": labels}})
+            
+        # 构建 where 条件
+        if len(conditions) == 0:
+            self._where = {}
+        elif len(conditions) == 1:
+            self._where = conditions[0]
+        else:
+            self._where = {"$and": conditions}
         return self
 
     def vector_get_segments(self, semgment_ids: list[str]):
@@ -91,15 +99,10 @@ class ChromaVectorIndexer(EmbeddingFunction):
         return self
 
     def vector_search_segments_by_keyword(self,chapter_ids: list[int]):
-        self._where = {}
         if chapter_ids:
             self._where["chapter_id"] = {"$in": chapter_ids}
         return self
-        
-        
-        
-        
-        
+    
         
 
     """构建查询结果"""

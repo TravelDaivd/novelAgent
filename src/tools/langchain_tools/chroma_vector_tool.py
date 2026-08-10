@@ -32,7 +32,7 @@ class ChromaTools:
         class vector_get_segment_by_label_input(BaseModel):
             question: str = Field(description="用户问的问题")
             chapter_ids: list[int] = Field(description="章节ID列表，字段名：chapter_ids，数字列表，示例：[10, 11] ")
-            label: list[str] = Field(description="标签列表，可选值：战斗、修炼、内心、探索、对话。必须从可选值中选择，示例：['战斗', '对话'] ")
+            labels: list[str] = Field(description="标签列表，可选值：战斗、修炼、内心、探索、对话。必须从可选值中选择，示例：['战斗', '对话'] ")
         vector_get_segment_by_label_tool = StructuredTool.from_function(
             name="vector_get_segment_by_label",
             func=self.llmChroma.handle_get_segments_by_label,
