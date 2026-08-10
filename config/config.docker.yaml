@@ -1,0 +1,71 @@
+# config/config.docker.yaml
+# Docker 生产配置 - 所有路径都是相对于项目根目录
+
+env: docker
+
+# 项目路径（相对路径，在容器内解析）
+project:
+  data_dir: data
+  raw_dir: data/raw
+  processed_dir: data/processed
+  models_dir: data/models
+  vector_databases_dir: data/vector_databases
+  splits_dir: data/processed/splits
+
+# 模型配置（与本地相同）
+models:
+  shared: shared
+  person_recognition: person_recognition_macBert
+  relation_recognition: relation_recognition_macBert
+  text_recognition: text_recognition_macBert
+
+# 基础模型
+base_models:
+  chinese_mac_bert: chinese_macBert_base
+  bge_small_zh: bge_small_zh_v1.5
+
+# 训练配置（与本地相同）
+training:
+  manual_dir: manual
+  validation_dir: validation
+  auto_dir: auto
+  appraise_dir: appraise
+  files:
+    person_train: person_train.json
+    relation_train: relation_train.json
+    text_train: text_train.json
+    person_validation: person_validation.json
+    relation_validation: relation_validation.json
+    text_validation: text_validation.json
+    auto_person: auto_person_marginalia.json
+    auto_relation: auto_relation_marginalia.json
+    auto_text: auto_text_marginalia.json
+    appraise_person: appraise_person_data.json
+    appraise_relation: appraise_relation_data.json
+    appraise_text: appraise_text_data.json
+
+# 向量数据库（与本地相同）
+vector:
+  chroma_document_data: chroma_document_data.jsonl
+  chroma_segment_data: chroma_vectro_segment_data.jsonl
+  graph_segment_data: graph_segment_data.jsonl
+  chroma_document_collection: chroma_document_collection
+  chroma_segment_collection: chroma_segment_collection
+
+# 采样配置（与本地相同）
+sampling:
+  samples_per_chapter: 110
+  score_threshold: 0.2
+
+# LLM 配置（与本地相同）
+llm:
+  deepseek_url: https://api.deepseek.com/v1
+
+# Neo4j 配置（Docker - 使用服务名）
+neo4j:
+  url: bolt://neo4j:7687
+  user: neo4j
+
+# 魔塔配置（与本地相同）
+modelscope:
+  cache_dir: data/models
