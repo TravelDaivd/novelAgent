@@ -1,0 +1,13 @@
+# 模型权重（不打进镜像，运行时动态拉取/挂载）
+data/models/*
+data/processed/appraise
+data/processed/auto
+data/processed/manual
+# Python缓存、Git文件
+__pycache__/
+*.pyc
+.git/
+.gitignore
+# 镜像冗余文件
+*.md
+README.md

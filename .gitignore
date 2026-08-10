@@ -1,0 +1,3 @@
+# Project exclude paths
+local.env
+docker.env
