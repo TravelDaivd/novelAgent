@@ -2,93 +2,115 @@ import os
 
 from dotenv import load_dotenv
 
+from config.settings import get_config, AppConfig
+
+config = get_config()
+
+
+
+
 # 获取项目根目录路径
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DATA_DIR = os.path.join(PROJECT_ROOT, 'data')
-RAW_DATA_DIR = os.path.join(DATA_DIR, 'raw')
-MODELS_DATA_DIR = os.path.join(DATA_DIR, 'models')
-PROCESSED_DATA_DIR = os.path.join(DATA_DIR, 'processed')
-
-
+PROJECT_ROOT = config.PROJECT_ROOT
+DATA_DIR = config.DATA_DIR
+RAW_DATA_DIR = config.RAW_DATA_DIR
+MODELS_DATA_DIR = config.MODELS_DATA_DIR
+PROCESSED_DATA_DIR = config.PROCESSED_DATA_DIR
 
 
 # 共享模型存放文件夹
-SHARED_DATA_DIR = os.path.join(MODELS_DATA_DIR, 'shared')
+SHARED_DATA_DIR = config.SHARED_DATA_DIR
 # 基本模型
-CHINESE_MAC_BERT_BASE_NAME = 'chinese_macBert_base'
-BGE_SMALL_ZH_NAME = 'bge_small_zh_v1.5'
+CHINESE_MAC_BERT_BASE_NAME = config.base_models.chinese_mac_bert
+BGE_SMALL_ZH_NAME = config.base_models.bge_small_zh
 
 # 小说-人物识别模型
-PERSON_RECOGNITION_CHINESE_MAC_BERT_NAME = 'person_recognition_macBert'
+PERSON_RECOGNITION_CHINESE_MAC_BERT_NAME = config.PERSON_MODEL_NAME
 # 小说-关系抽取模型
-RELATION_RECOGNITION_CHINESE_MAC_BERT_NAME = 'relation_recognition_macBert'
+RELATION_RECOGNITION_CHINESE_MAC_BERT_NAME = config.RELATION_MODEL_NAME
 # 小说-文本分类模型
-TEXT_RECOGNITION_CHINESE_MAC_BERT_NAME = 'text_recognition_macBert'
+TEXT_RECOGNITION_CHINESE_MAC_BERT_NAME = config.TEXT_MODEL_NAME
 
 
 # 人工训练数据
-MANUAL_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, 'manual')
-PERSON_TRAIN_NAME='person_train.json'
-RELATION_TRAIN_NAME='relation_train.json'
-TEXT_TRAIN_NAME='text_train.json'
+MANUAL_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, config.training.manual_dir)
+PERSON_TRAIN_NAME= config.training.files.person_train
+RELATION_TRAIN_NAME= config.training.files.relation_train
+TEXT_TRAIN_NAME= config.training.files.text_train
 
 # 训练模型验证集数据
-VALIDATION_DATA_DIR = os.path.join(MANUAL_DATA_DIR, 'validation')
-PERSON_VALIDATION_NAME='person_validation.json'
-RELATION_VALIDATION_NAME='relation_validation.json'
-TEXT_VALIDATION_NAME='text_validation.json'
+VALIDATION_DATA_DIR = os.path.join(MANUAL_DATA_DIR, config.training.validation_dir)
+PERSON_VALIDATION_NAME= config.training.files.person_validation
+RELATION_VALIDATION_NAME= config.training.files.relation_validation
+TEXT_VALIDATION_NAME= config.training.files.text_validation
 
 
 
 # 自动标注数据
-AUTO_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, 'auto')
-AUTO_PERSON_MARGINALIA_NAME='auto_person_marginalia.json'
-AUTO_RELATION_MARGINALIA_NAME='auto_relation_marginalia.json'
-AUTO_TEXT_MARGINALIA_NAME='auto_text_marginalia.json'
+AUTO_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, config.training.auto_dir)
+AUTO_PERSON_MARGINALIA_NAME = config.training.files.auto_person
+AUTO_RELATION_MARGINALIA_NAME = config.training.files.auto_relation
+AUTO_TEXT_MARGINALIA_NAME= config.training.files.auto_text
 
 # 评估模型
-APPRAISE_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, 'appraise')
-APPRAISE_PERSON_DATA_NAME='appraise_person_data.json'
-APPRAISE_RELATION_DATA_NAME='appraise_relation_data.json'
-APPRAISE_TEXT_DATA_NAME='appraise_text_data.json'
+APPRAISE_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, config.training.appraise_dir)
+APPRAISE_PERSON_DATA_NAME = config.training.files.appraise_person
+APPRAISE_RELATION_DATA_NAME = config.training.files.appraise_relation
+APPRAISE_TEXT_DATA_NAME = config.training.files.appraise_text
 
 
 
 #========Chroma/Graph系统配置信息=============
-SPLITS_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, 'splits')
-CHROMA_DOCUMENT_DATA = 'chroma_document_data.jsonl'  # 向量数据库文档 数据文件名称
-CHROMA_VECTRO_SEGMENT_DATA = 'chroma_vectro_segment_data.jsonl'  # 向量数据库语义索引 数据文件名称
-GRAPH_SEGMENT_DATA = 'graph_segment_data.jsonl'  # 知识图谱 数据文件名称
+SPLITS_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, config.SPLITS_DATA_DIR)
+CHROMA_DOCUMENT_DATA = config.CHROMA_DOCUMENT_DATA  # 向量数据库文档 数据文件名称
+CHROMA_VECTRO_SEGMENT_DATA = config.CHROMA_SEGMENT_DATA  # 向量数据库语义索引 数据文件名称
+GRAPH_SEGMENT_DATA = config.GRAPH_SEGMENT_DATA # 知识图谱 数据文件名称
 #向量数据库与集合名称
-VECTOR_DATABASES_DATA_DIR = os.path.join(DATA_DIR, 'vector_databases')
-CHROMA_DOCUMENT_COLLECTION = 'chroma_document_collection'        # 向量数据库文档 集合名称
-CHROMA_SEGMENT_COLLECTION = 'chroma_segment_collection'   # 向量数据库语义索引 集合名称
-
-
+VECTOR_DATABASES_DATA_DIR = os.path.join(DATA_DIR, config.VECTOR_DATABASES_DATA_DIR)
+CHROMA_DOCUMENT_COLLECTION = config.CHROMA_DOCUMENT_COLLECTION       # 向量数据库文档 集合名称
+CHROMA_SEGMENT_COLLECTION = config.CHROMA_SEGMENT_COLLECTION   # 向量数据库语义索引 集合名称
 
 
 """
  小说文章采样基本配置
 """
-NOVEL_ARTICLE_SPLITTER_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, 'novel_article_splitter')
-#文本采样
-CANDIDATE_SENTENCES = 'candidate_sentences.txt'
 # 采样配置
-SAMPLING_CONFIG = {
-    'samples_per_chapter': 110,
-    'score_threshold': 0.2
-}
-
-"""
- 小说文章批注基本配置 （根据采样数据进行批注）
-"""
-NOVEL_MARGINALIA_DATA_DIR = os.path.join(PROCESSED_DATA_DIR, 'novel_marginalia')
-# 数据批注
-NOVEL_AUTO_MARGINALIA_AFTER_NAME = 'novel_auto_annotated_data.json'
-
+SAMPLING_CONFIG = config.SAMPLING_CONFIG
 
 #大模型
 load_dotenv()
-DEEPSEEK_API_KEY= os.getenv('DEEPSEEK_API_KEY', '')
-DEEPSEEK_URL = 'https://api.deepseek.com/v1'
+DEEPSEEK_API_KEY= config.DEEPSEEK_API_KEY
+DEEPSEEK_URL = config.DEEPSEEK_URL
+
+# Neo4j 配置
+NEO4J_URL = config.NEO4J_URL
+NEO4J_USER = config.NEO4J_USER
+NEO4J_PASSWORD = config.NEO4J_PASSWORD
+
+# 魔塔配置
+MODELSCOPE_ACCESS_TOKEN = config.MODELSCOPE_ACCESS_TOKEN
+MODELSCOPE_CACHE_DIR = config.MODELSCOPE_CACHE_DIR
+
+
+# 导出函数
+__all__ = [
+    'PROJECT_ROOT', 'DATA_DIR', 'RAW_DATA_DIR', 'PROCESSED_DATA_DIR',
+    'MODELS_DATA_DIR', 'VECTOR_DATABASES_DATA_DIR', 'SPLITS_DATA_DIR',
+    'SHARED_DATA_DIR',
+    'PERSON_RECOGNITION_CHINESE_MAC_BERT_NAME',
+    'RELATION_RECOGNITION_CHINESE_MAC_BERT_NAME',
+    'TEXT_RECOGNITION_CHINESE_MAC_BERT_NAME',
+    'CHINESE_MAC_BERT_BASE_NAME', 'BGE_SMALL_ZH_NAME',
+    'MANUAL_DATA_DIR', 'VALIDATION_DATA_DIR', 'AUTO_DATA_DIR', 'APPRAISE_DATA_DIR',
+    'PERSON_TRAIN_NAME', 'RELATION_TRAIN_NAME', 'TEXT_TRAIN_NAME',
+    'PERSON_VALIDATION_NAME','RELATION_VALIDATION_NAME','TEXT_VALIDATION_NAME',
+    'AUTO_PERSON_MARGINALIA_NAME','AUTO_RELATION_MARGINALIA_NAME','AUTO_TEXT_MARGINALIA_NAME',
+    'APPRAISE_PERSON_DATA_NAME','APPRAISE_RELATION_DATA_NAME','APPRAISE_TEXT_DATA_NAME',
+    'CHROMA_DOCUMENT_DATA', 'CHROMA_VECTRO_SEGMENT_DATA', 'GRAPH_SEGMENT_DATA',
+    'CHROMA_DOCUMENT_COLLECTION', 'CHROMA_SEGMENT_COLLECTION',
+    'SAMPLING_CONFIG',
+    'DEEPSEEK_API_KEY', 'DEEPSEEK_URL',
+    'NEO4J_URL', 'NEO4J_USER', 'NEO4J_PASSWORD',
+    'MODELSCOPE_ACCESS_TOKEN', 'MODELSCOPE_CACHE_DIR',
+    'get_config', 'AppConfig'
+]
 
