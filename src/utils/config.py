@@ -1,6 +1,5 @@
 import os
 
-from dotenv import load_dotenv
 
 from config.settings import get_config, AppConfig
 
@@ -77,7 +76,6 @@ CHROMA_SEGMENT_COLLECTION = config.CHROMA_SEGMENT_COLLECTION   # 向量数据库
 SAMPLING_CONFIG = config.SAMPLING_CONFIG
 
 #大模型
-load_dotenv()
 DEEPSEEK_API_KEY= config.DEEPSEEK_API_KEY
 DEEPSEEK_URL = config.DEEPSEEK_URL
 

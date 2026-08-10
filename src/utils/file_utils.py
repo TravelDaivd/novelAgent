@@ -12,8 +12,7 @@ class FileUtils:
     def get_txt_files(directory) :
         """获取目录下所有 txt 文件路径"""
         return [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.txt')]
-    
-    
+
     
     @staticmethod
     def extract_chapter_id(file_name: str) -> int:
