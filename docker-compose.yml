@@ -1,0 +1,62 @@
+version: "3.8"
+services:
+  novel-agent:
+    build: .
+    container_name: novel_knowledge_agent
+    ports:
+      - "8000:8000"
+    volumes:
+      # 离线模式：宿主机./data/models挂载到容器模型目录
+      #- ./data/models:/app/novelAgent/data/models
+      # 持久化向量库、图谱数据，容器销毁不丢失
+      - ./data/vector_databases:/app/novelAgent/data/vector_databases
+    env_file:
+      - docker.env
+    environment:
+      - MODELSCOPE_ACCESS_TOKEN=ms-88bba23a-debb-4593-bf79-6a6417a36c58
+      - MODELSCOPE_HUB_CACHE=/app/novelAgent/data/models
+    networks:
+      - novel-network
+    depends_on:
+      - neo4j
+
+  # 配套Neo4j图数据库容器，完整链路闭环
+  neo4j:
+    image: neo4j:5.18
+    container_name: novel-neo4j
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    volumes:
+      - neo4j_data:/data
+    environment:
+      - NEO4J_AUTH=neo4j/agent12345
+      - NEO4J_dbms_memory_pagecache_size=256M
+      - NEO4j_dbms_memory_heap_max_size=512M
+    networks:
+      - novel-network
+    healthcheck:
+      test: [ "CMD", "cypher-shell", "-u", "neo4j", "-p", "agent12345", "RETURN 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+  # ========== 新增：前端服务 ==========
+  frontend:
+    image: nginx:alpine
+    container_name: novel-frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./src/frontend:/usr/share/nginx/html
+    networks:
+      - novel-network
+    depends_on:
+      - novel-agent
+
+networks:
+  novel-network:
+    driver: bridge
+
+volumes:
+  neo4j_data:
