@@ -149,7 +149,7 @@ flowchart TD
 2、更改 docker.env 中的 “APP_llm__DEEPSEEK_API_KEY” 更换成你的【deepseek】中的API_KEY 
 ```
 ### 模式1：在线演示模式（面试官体验推荐）
-无需提前下载模型，启动时自动拉取魔塔社区最新训练权重
+无需提前下载模型，启动时自动拉取魔塔社区三自训练新模型权重
 #### 1. 构建镜像
 ```
 docker build  -t novel-agent . 
