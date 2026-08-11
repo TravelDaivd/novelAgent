@@ -57,8 +57,8 @@
 ```mermaid
 flowchart TD
     Upload[用户上传新内容] --> Classify[判断内容分类]
-    Classify --> NER[实体识别<br>人物实体]
-    NER --> RE[关系抽取<br>实体间关系]
+    Classify --> NER[人物实体识别]
+    NER --> RE[实体间关系抽取]
     RE --> Struct[结构化数据<br>实体 + 关系 + 分类标签]
     Struct --> Tools[入库工具]
     Tools --> Neo4j[(知识图谱<br>Neo4j)]
