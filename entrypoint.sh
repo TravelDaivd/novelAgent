@@ -37,6 +37,7 @@ done
 if [ "$all_model_exist" = true ]; then
     echo "【离线私有化模式】检测到本地完整三套模型，跳过魔塔下载，不访问外网"
     export MODEL_LOAD_MODE="local"
+    echo "等待Neo4j图数据库服务启动成功"
     sleep 10
 else
     echo "【在线演示模式】缺失本地模型，开始登录魔塔批量下载3套私有模型"
