@@ -134,10 +134,10 @@ flowchart TD
 ## 项目亮点
 ### 关键能力与创新点
 ```
-PyTorch 手写 MacBERT 多任务训练工程，小样本调优 LoRA，解决 Loss 震荡、过拟合，构建数据迭代闭环
-GraphRAG 双路召回：向量库 + Neo4j 知识图谱，弥补纯向量检索关系丢失缺陷
-LangGraph 混合 Agent 架构：Workflow 处理确定性逻辑，ReAct 处理复杂推理，规避原生 Agent 线上缺陷
-标准化模型交付链路，算法模型直接赋能上层问答业务
+1、PyTorch 手写 MacBERT 多任务训练工程，小样本调优 LoRA，解决 Loss 震荡、过拟合，构建数据迭代闭环
+2、GraphRAG 双路召回：向量库 + Neo4j 知识图谱，弥补纯向量检索关系丢失缺陷
+3、LangGraph 混合 Agent 架构：Workflow 处理确定性逻辑，ReAct 处理复杂推理，规避原生 Agent 线上缺陷
+4、标准化模型交付链路，算法模型直接赋能上层问答业务
 ```
 ## Docker 一键私有化部署指南
 ### 私有化Docker部署方案
