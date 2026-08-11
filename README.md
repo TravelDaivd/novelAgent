@@ -232,28 +232,28 @@ novelAgent/                         # 项目根目录
 │   │   ├── inference/              # 模型推理
 │   │   ├── LLM/                    # LLM工具调用
 │   │   ├── registry/               # 模型配置
-│   │   └── training/               # 模型推理
+│   │   └── training/               # 模型训练
 │   │   └── util/                   # 模型评估
-│   ├── service/                    # 章节服务
+│   ├── service/                    # 应用服务
 │   │   ├── __init__.py
 │   │   ├── chapter_processor.py    # 上传章节推理
 │   │   └── chapter_storage.py      # 上传章节入库
-│   ├── tools/                      # 模型工具
+│   ├── tools/                      # Agent工具
 │   │   ├── __init__.py
 │   │   ├── langchain_tools/        # 模型工具
 │   │   ├── retrieval/              # 数据检索
 │   │   ├── storage/                # 数据入库
-│   │   └── utils.py                # 数据工具
-│   └── utils/                      # 系统函数
+│   │   └── utils.py                # Agnet工具
+│   └── utils/                      # 系统工具
 │       ├── __init__.py
 │       ├── file_utils.py           # 文件管理
 │       └── config.py               # 配置管理
 ├── data/                           # 数据目录
 │   ├── raw/                        # 原始数据
-│   ├── processed/                  # 处理后的数据
+│   ├── processed/                  # 训练模型的数据
 │   │   ├── splits/                 # 模型推理后数据 
 │   ├── vector_databases/           # 向量数据库存储 
-│   └── models/                     # 训练好的模型
+│   └── models/                     # 训练好的模型 (项目启动后出现)
 └──     ├── person_recognition_macBert/            # 实体识别模型
         ├── relation_recognition_macBert/          # 关系抽取模型
         └── shared/                                # 模型基座
