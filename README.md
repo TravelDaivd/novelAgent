@@ -144,8 +144,10 @@ flowchart TD
 本项目镜像仅打包业务代码+小说章节内容，1.3G NLP微调模型上传至魔塔社区，支持双加载模式，适配演示环境/内网离线环境。
 
 ### 环境前置
-安装 Docker + Docker Compose  
-更改 docker.env 中的 “APP_llm__DEEPSEEK_API_KEY” 更换成你的【deepseek】中的API_KEY 
+```
+1、安装 Docker + Docker Compose  
+2、更改 docker.env 中的 “APP_llm__DEEPSEEK_API_KEY” 更换成你的【deepseek】中的API_KEY 
+```
 ### 模式1：在线演示模式（面试官体验推荐）
 无需提前下载模型，启动时自动拉取魔塔社区最新训练权重
 #### 1. 构建镜像
