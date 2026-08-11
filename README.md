@@ -140,7 +140,7 @@ flowchart TD
 
 ### 环境前置
 安装 Docker + Docker Compose
-更改 docker.env 中的 “APP_llm__DEEPSEEK_API_KEY” 跟换成你的API_KEY 
+更改 docker.env 中的 “APP_llm__DEEPSEEK_API_KEY” 更换成你的API_KEY 
 ### 模式1：在线演示模式（面试官体验推荐）
 无需提前下载模型，启动时自动拉取魔塔社区最新训练权重
 #### 1. 构建镜像
