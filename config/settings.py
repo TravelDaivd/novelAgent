@@ -143,6 +143,8 @@ class BaseModelsConfig(BaseModel):
     """基础模型配置"""
     chinese_mac_bert: str = "chinese_macBert_base"
     bge_small_zh: str = "bge_small_zh_v1.5"
+    bge_reranker: str = "bge_reranker_v2_m3"
+    bm25_db: str = "bm25.db"
 
 
 class TrainingFilesConfig(BaseModel):

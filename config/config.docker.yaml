@@ -23,6 +23,8 @@ models:
 base_models:
   chinese_mac_bert: chinese_macBert_base
   bge_small_zh: bge_small_zh_v1.5
+  bge_reranker: bge_reranker_v2_m3
+  bm25_db: bm25.db
 
 # 训练配置（与本地相同）
 training:
