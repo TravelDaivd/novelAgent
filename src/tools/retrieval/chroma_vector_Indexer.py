@@ -5,9 +5,10 @@ from chromadb import EmbeddingFunction
 
 import numpy as np
 
+from tools.retrieval.retrieval_bm25 import BM25Searcher
 from tools.utils.tool_utils import ToolUtils
 from utils.config import *
-from tools.utils.log_and_catch import log_and_catch
+from utils.log_and_catch import log_and_catch
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,7 +44,7 @@ class ChromaVectorIndexer(EmbeddingFunction):
         self._question = None
         self._where = {}
         self._result = self.data_coll.count()
-        self._include = ["documents","metadatas"]
+        self._include = ["documents","metadatas","distances"]
         return self
     
     
@@ -119,11 +120,10 @@ class ChromaVectorIndexer(EmbeddingFunction):
                 
             result = self.data_coll.query(
                 query_texts=[self._question],
-                where=self._where ,
+                where=self._where if self._where else None,
                 n_results=self._result,
                 include=self._include
             )
-
             # 记录结果统计
             doc_count = len(result['documents'][0]) if result['documents'] else 0
             logger.info(f"找到 {doc_count} 个相关段落")
@@ -148,22 +148,65 @@ class ChromaVectorIndexer(EmbeddingFunction):
         doc_context_list = build_result_data["documents"][0] if build_result_data['documents'] else []
         metadatas_list = build_result_data["metadatas"][0] if build_result_data['metadatas'] else []
         formatted = []
-
         for doc_context,metadata in zip(doc_context_list,metadatas_list):
             formatted.append({
                 "text": doc_context,
                 "chapter_id": metadata.get("chapter_id", "unknown"),
                 "label": metadata.get("label", "unknown")
             })
-
         return {
             "context": formatted
         }
 
+    @log_and_catch
+    def build_raw_hybrid(self) -> Optional[Dict[str, Any]]:
+        """
+        执行查询并返回格式化的结果（检索层兜底->原因是：图谱灭有查询到结果）
+        """
+        self._result = 50
+        build_result_data = self.build()
+        if not build_result_data:
+            return None
+
+        doc_context_list = build_result_data["documents"][0] if build_result_data['documents'] else []
+        metadatas_list = build_result_data["metadatas"][0] if build_result_data['metadatas'] else []
+        distances_list = build_result_data["distances"][0] if build_result_data['distances'] else []
+        doc_id_list = build_result_data.get("ids", [[]])[0] if build_result_data.get("ids") else []
+
+        formatted = []
+        for idx, (doc_id, doc_context, metadata) in enumerate(zip(doc_id_list, doc_context_list, metadatas_list)):
+            distance = distances_list[idx] if idx < len(distances_list) else 0.0
+            # 距离越小越相似，转换为相似度分数（可选）
+            # 方法1：直接使用距离（小→好）
+            # 方法2：转换为相似度（大→好）
+            similarity_score = 1.0 / (1.0 + distance)  # 距离越小，分数越高
+            formatted.append({
+                "id":doc_id,
+                "text": doc_context,
+                "chapter_id": metadata.get("chapter_id", "unknown"),
+                "label": metadata.get("label", "unknown"),
+                "order": metadata.get("order", 0),
+                "score": f"{float(similarity_score):.2f}", # 转换后的相似度（越大越相关）
+                "source": "vector"
+            })
+            
+        return formatted
+    
+    
+    
+    
+
 if __name__ == "__main__":
     chromaVectorIndexer = ChromaVectorIndexer()
+    bm25Searcher = BM25Searcher()
+    question = "第10、11章发生了什么事情？主要描述谁的？有没有我喜欢的打斗环节"
+    result = bm25Searcher.search(
+        query=question, top_k=15)
+    print(result)
+    print(len(result))
+    
   #  segment_ids = ['seg_11_1', 'seg_10_2', 'seg_11_4', 'seg_10_4', 'seg_11_5', 'seg_10_5', 'seg_11_6', 'seg_10_8', 'seg_11_9', 'seg_10_9', 'seg_11_10', 'seg_11_11', 'seg_11_12', 'seg_10_12', 'seg_11_16', 'seg_10_16', 'seg_10_17', 'seg_11_18', 'seg_10_18', 'seg_10_19']
    # logger.info(f"参数个数：{len(segment_ids)}")
-    chromaVectorIndexer.semantic_search("对方是怎么死的？..")
-    chromaVectorIndexer.vector_get_segment_by_label([10, 11],['战斗'])
-    logger.info(chromaVectorIndexer.build_raw())
+    #chromaVectorIndexer.semantic_search("第10、11章发生了什么事情？主要描述谁的？有没有我喜欢的打斗环节")
+    #chromaVectorIndexer.vector_get_segment_by_label([10, 11],['战斗'])
+    #logger.info(chromaVectorIndexer.build_raw())
