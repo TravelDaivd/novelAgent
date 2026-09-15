@@ -1,6 +1,6 @@
 from tools.retrieval.chroma_document_indexer import ChromaDocumentIndexer
 from tools.retrieval.chroma_vector_Indexer import ChromaVectorIndexer
-from tools.utils.log_and_catch import log_and_catch
+from utils.log_and_catch import log_and_catch
 
 
 class LlmChroma:
