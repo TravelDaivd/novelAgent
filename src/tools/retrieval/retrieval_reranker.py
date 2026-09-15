@@ -6,11 +6,12 @@ from typing import List, Optional
 from transformers import AutoTokenizer,AutoModelForSequenceClassification
 import torch
 
-from utils.config import VECTOR_DATABASES_DATA_DIR, BGE_RERANKER_V2_M3_NAME
+from utils.config import VECTOR_DATABASES_DATA_DIR, BGE_RERANKER_BASE_NAME
+from utils.log_and_catch import log_and_catch
 
 logger = logging.getLogger(__name__)
 
-class ChromaReranker:
+class RetrievalReranker:
 
     _instance = None
     _model = None
@@ -23,8 +24,8 @@ class ChromaReranker:
         return cls._instance
 
     def __init__(self):
-        self.max_batch_size = 5
-        self.model_file_path = os.path.join(VECTOR_DATABASES_DATA_DIR, BGE_RERANKER_V2_M3_NAME)
+        self.max_batch_size = 15
+        self.model_file_path = os.path.join(VECTOR_DATABASES_DATA_DIR, BGE_RERANKER_BASE_NAME)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.timeout_seconds = 30
         self.max_length = 512
@@ -32,21 +33,22 @@ class ChromaReranker:
 
     def _load_model(self):
         """加载模型（只执行一次）"""
-        if ChromaReranker._model is  None:
+        if RetrievalReranker._model is  None:
             try:
                 # 1. 加载分词器
-                ChromaReranker._tokenizer = AutoTokenizer.from_pretrained( self.model_file_path,trust_remote_code=True)
+                RetrievalReranker._tokenizer = AutoTokenizer.from_pretrained(self.model_file_path, trust_remote_code=True)
                 # 2. 加载模型
-                ChromaReranker._model = AutoModelForSequenceClassification.from_pretrained(self.model_file_path,trust_remote_code=True)
+                RetrievalReranker._model = AutoModelForSequenceClassification.from_pretrained(self.model_file_path, trust_remote_code=True)
                 # 3. 移动到指定设备
-                ChromaReranker._model.to(self.device)
-                ChromaReranker._model.eval()  
+                RetrievalReranker._model.to(self.device)
+                RetrievalReranker._model.eval()  
                 logger.info(f"模型加载完成")
             except Exception as e:
                 logger.error(f"模型加载失败: {e}")
                 raise RuntimeError(f"Rerank 模型加载失败: {e}")
 
-    def rerank(self,query: str,documents: List[str],top_k: int = 5,batch_size: Optional[int] = None,fallback: bool = True) :
+    @log_and_catch
+    def rerank(self,query: str,documents: List[str],top_k: int = 15,batch_size: Optional[int] = None,fallback: bool = True) :
         """
         对文档进行重排序
         Args:
@@ -65,7 +67,7 @@ class ChromaReranker:
         if not documents:
             return []
         if top_k <= 0:
-            top_k = 1
+            top_k = 10
         # 2. 确定批次大小
         if batch_size is None:
             batch_size = self.max_batch_size
@@ -125,7 +127,7 @@ class ChromaReranker:
 
         # 推理
         with torch.no_grad():
-            outputs = ChromaReranker._model(**inputs)
+            outputs = RetrievalReranker._model(**inputs)
             logits = outputs.logits
             scores = torch.sigmoid(logits).view(-1,).float()
 
