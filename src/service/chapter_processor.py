@@ -1,12 +1,11 @@
 import glob
-import json
 import logging
 import os
 
 from models.inference_pipeline import InferencePipeline
 from models.util.models_utils import  ModelsUtils
 from service.chapter_storage import ChapterStorage
-from tools.utils.log_and_catch import log_and_catch
+from utils.log_and_catch import log_and_catch
 from utils.config import *
 from utils.file_utils import FileUtils
 
