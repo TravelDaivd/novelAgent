@@ -8,8 +8,9 @@ project:
   raw_dir: data/raw
   processed_dir: data/processed
   models_dir: data/models
-  vector_databases_dir: data/vector_databases
   splits_dir: data/processed/splits
+  vector_databases_dir: data/vector_databases
+  libsimple_sqllite: data/vector_databases/libsimple
 
 # 模型配置
 models:
@@ -22,7 +23,7 @@ models:
 base_models:
   chinese_mac_bert: chinese_macBert_base
   bge_small_zh: bge_small_zh_v1.5
-  bge_reranker: bge_reranker_v2_m3
+  bge_reranker: bge-reranker-base
   bm25_db: bm25.db
 
 # 训练配置
@@ -53,6 +54,8 @@ vector:
   chroma_document_data: chroma_document_data.jsonl
   chroma_segment_data: chroma_vectro_segment_data.jsonl
   graph_segment_data: graph_segment_data.jsonl
+  
+  libsimple_file_path: libsimple.dylib
   
   chroma_document_collection: chroma_document_collection
   chroma_segment_collection: chroma_segment_collection
