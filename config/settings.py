@@ -143,7 +143,8 @@ class BaseModelsConfig(BaseModel):
     """基础模型配置"""
     chinese_mac_bert: str = "chinese_macBert_base"
     bge_small_zh: str = "bge_small_zh_v1.5"
-    bge_reranker: str = "bge_reranker_v2_m3"
+    bge_reranker: str = "bge-reranker-base"
+    libsimple_sqllite: str = "libsimple"
     bm25_db: str = "bm25.db"
 
 
@@ -177,10 +178,16 @@ class TrainingConfig(BaseModel):
 
 class VectorConfig(BaseModel):
     """向量数据库配置"""
+    
+    libsimple_dir: str = "libsimple"
+    
     chroma_document_data: str = "chroma_document_data.jsonl"
     chroma_segment_data: str = "chroma_vectro_segment_data.jsonl"
     graph_segment_data: str = "graph_segment_data.jsonl"
     
+    """ sqlLite_libsimple"""
+    libsimple_file_path: str = "libsimple.dylib"
+
     """chroma 集合"""
     chroma_document_collection: str = "chroma_document_collection"
     chroma_segment_collection: str = "chroma_segment_collection"
@@ -346,7 +353,11 @@ class AppConfig(BaseSettings):
 
     @property
     def GRAPH_SEGMENT_DATA(self) -> str:
-        return self.vector.graph_segment_data
+        return self.vector.graph_segment_data 
+    
+    @property
+    def LIBSIMPLE_FILE_PATH(self) -> str:
+        return self.vector.libsimple_file_path
 
     @property
     def CHROMA_DOCUMENT_COLLECTION(self) -> str:
