@@ -1,7 +1,7 @@
 import logging
 
 from tools.retrieval.graph_search import GraphSearch
-from tools.utils.log_and_catch import log_and_catch
+from utils.log_and_catch import log_and_catch
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

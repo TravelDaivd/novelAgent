@@ -1,18 +1,29 @@
 import functools
 import time
 import logging
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+import sys
 
 
 def log_and_catch(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
+        # 获取 logger
+        logger = logging.getLogger(func.__module__)
+
+        # 如果没有 handler，自动添加
+        if not logger.handlers:
+            handler = logging.StreamHandler(sys.stdout)
+            handler.setFormatter(
+                logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            )
+            logger.addHandler(handler)
+            logger.setLevel(logging.INFO)
+            # 防止向上传播导致重复
+            logger.propagate = False
+
         start = time.time()
         func_name = func.__name__
 
-        # 只记录入参（跳过 self）
         args_str = [str(a) for a in args[1:]] if args else []
         kwargs_str = [f"{k}={v}" for k, v in kwargs.items()]
         logger.info(f"[调用] {func_name} | 入参: {', '.join(args_str + kwargs_str)}")
@@ -28,5 +39,3 @@ def log_and_catch(func):
             raise
 
     return wrapper
-
-
