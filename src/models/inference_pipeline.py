@@ -2,7 +2,6 @@ import glob
 import json
 import logging
 import os
-import re
 
 import torch
 
@@ -13,7 +12,7 @@ from models.registry.config_person import ConfigPerson
 from models.registry.config_relation import ConfigRelation
 from models.registry.config_text import ConfigText
 from tools.storage.data_exporter import DataExporter
-from tools.utils.log_and_catch import log_and_catch
+from utils.log_and_catch import log_and_catch
 from utils.config import *
 
 logging.basicConfig(level=logging.INFO)
