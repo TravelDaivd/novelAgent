@@ -3,9 +3,12 @@ import logging
 import os
 
 import sqlite3
+import subprocess
 from typing import List, Dict
 
 from utils.config import *
+from utils.config import LIBSIMPLE_FILE_PATH, LIBSIMPLE_DIR
+from utils.log_and_catch import log_and_catch
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +17,11 @@ class BM25Store:
 
     def __init__(self, force_reload=False):
         self.db_path = os.path.join(VECTOR_DATABASES_DATA_DIR, BM25_DB_NAME)
+        self.libsimple_file_path = os.path.join(LIBSIMPLE_DIR,LIBSIMPLE_FILE_PATH)
         self.load_data_path = os.path.join(SPLITS_DATA_DIR, CHROMA_VECTRO_SEGMENT_DATA)
         self.fts_table_name = "fts_documents"
         self.max_batch_size = 15
+        self.use_jieba = False
         self.conn = None
         self.init_connection()
         self.init_fts_table()
@@ -36,7 +41,10 @@ class BM25Store:
                 os.makedirs(db_dir)
             self.conn = sqlite3.connect(self.db_path)
             self.conn.row_factory = sqlite3.Row
-
+            
+            # 尝试加载 simple 扩展
+            self.load_simple_extension()
+            
             # 启用 WAL 模式（提高并发性能）
             self.conn.execute("PRAGMA journal_mode=WAL")
             self.conn.execute("PRAGMA synchronous=NORMAL")
@@ -47,18 +55,78 @@ class BM25Store:
             logger.error(f"数据库连接失败: {e}")
             raise
 
+    def allow_dylib_load(self):
+        """移除 macOS 隔离属性"""
+        try:
+            subprocess.run(
+                ["xattr", "-d", "com.apple.quarantine", self.libsimple_file_path],
+                check=False,
+                capture_output=True
+            )
+            return True
+        except Exception as e:
+            logger.warning(f"移除隔离属性失败: {e}")
+            return False
+
+    @log_and_catch
+    def load_simple_extension(self):
+        """加载 simple 扩展（带降级）"""
+        try:
+            # 检查扩展文件是否存在
+            if not os.path.exists(self.libsimple_file_path):
+                logger.warning(f"simple 扩展文件不存在: {self.libsimple_file_path}")
+                self.use_jieba = False
+                return
+            #移除 macOS 隔离属性
+            self.allow_dylib_load()
+            original_dir = os.getcwd()
+            lib_dir = os.path.dirname(self.libsimple_file_path)
+            logger.info(f"切换工作目录: {original_dir} → {lib_dir}")
+            os.chdir(lib_dir)
+            try:
+                # 启用扩展加载
+                self.conn.enable_load_extension(True)
+                # 加载扩展
+                self.conn.load_extension(self.libsimple_file_path)
+    
+                #验证扩展是否可用
+                cursor = self.conn.cursor()
+                cursor.execute("SELECT jieba_query('测试')")
+                cursor.fetchone()
+    
+                self.use_jieba = True
+                logger.info(f"✅ simple 扩展加载成功: {self.libsimple_file_path}")
+            finally:
+                # 切换回原目录
+                os.chdir(original_dir)
+                logger.info(f"恢复工作目录: {original_dir}")
+            
+        except Exception as e:
+            logger.warning(f"⚠️ simple 扩展加载失败: {e}，将使用 unicode61 降级方案")
+            self.use_jieba = False
+    
+    
+    
     def init_fts_table(self):
         """创建 FTS5 虚拟表"""
         try:
+            if self.use_jieba:
+                tokenizer = "simple"
+                logger.info("使用 jieba 分词器")
+            else:
+                tokenizer = "unicode61"
+                logger.warning("使用 unicode61 分词器（降级方案）")
+            
             create_sql = f"""
                 CREATE VIRTUAL TABLE IF NOT EXISTS {self.fts_table_name}
                 USING fts5(
                     id UNINDEXED,
-                    content,
+                    raw_text,
+                    search_text,
+                    label,
                     chapter_id ,
-                    order_num ,
-                    label ,
-                    tokenize='unicode61'
+                    order_num, 
+                    tokenize='{tokenizer}'
                 )
             """
             self.conn.execute(create_sql)
@@ -95,9 +163,16 @@ class BM25Store:
                     continue
                 try:
                     data = json.loads(line)
+                    label = f"标签：{data.get('label', '')}"
+                    chapter = f"第{data.get('chapter_id', '')}章"
+                    if self.use_jieba: 
+                        search_text = f"{data.get('text', '')} {chapter} {label} " 
+                    else:
+                        search_text = f"{data.get('text', '')} {chapter} {data.get('chapter_id', '')} {label} {data.get('label', '')}"
                     row = (
                         data.get('id', ''),
                         data.get('text', ''),
+                        search_text,
                         data.get('label', ''),
                         data.get('chapter_id', 0),
                         data.get('order', 0)
@@ -115,7 +190,6 @@ class BM25Store:
         # 插入最后一批
         if batch:
             self.insert_batch(batch)
-
         logger.info(f" 数据加载完成")
         return total_count
 
@@ -128,9 +202,9 @@ class BM25Store:
             self.delete_document(ids)
 
             insert_sql = f"""
-                INSERT INTO {self.fts_table_name}
-                (id, content,label, chapter_id, order_num)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO {self.fts_table_name}  
+                (id, raw_text,search_text,label, chapter_id, order_num)
+                VALUES (?, ?, ?, ?, ?,?)
             """
             self.conn.executemany(insert_sql, batch)
             self.conn.commit()
@@ -139,18 +213,25 @@ class BM25Store:
             self.conn.rollback()
             raise
 
-    def batch_add_documents(self, docs: List[Dict]) -> int:
+    def batch_add_documents(self, doc_list: List[Dict]) -> int:
         """
         批量添加文档
         """
-        if not docs:
+        if not doc_list:
             return 0
         try:
             batch = []
-            for doc in docs:
+            for doc in doc_list:
+                label = f"标签：{doc.get('label', '')}"
+                chapter = f"第{doc.get('chapter_id', '')}章"
+                if self.use_jieba:
+                    search_text = f"{doc.get('text', '')} {chapter} {label} "
+                else:
+                    search_text = f"{doc.get('text', '')} {chapter} {doc.get('chapter_id', '')} {label} {doc.get('label', '')}"
                 batch.append((
                     doc.get('id', ''),
                     doc.get('text', ''),
+                    search_text,
                     doc.get('label', ''),
                     doc.get('chapter_id', 0),
                     doc.get('order', 0)
@@ -158,8 +239,8 @@ class BM25Store:
 
             insert_sql = f"""
                 INSERT OR REPLACE INTO {self.fts_table_name}
-                (id, content, chapter_id, order_num, label)
-                VALUES (?, ?, ?, ?, ?)
+                (id, raw_text,search_text,label, chapter_id, order_num)
+                VALUES (?, ?, ?, ?, ?, ?)
             """
             self.conn.executemany(insert_sql, batch)
             self.conn.commit()
