@@ -10,7 +10,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 import  json
 from src.utils.config import *
 from tools.utils.tool_utils import ToolUtils
-from tools.utils.log_and_catch import log_and_catch
+from utils.log_and_catch import log_and_catch
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
